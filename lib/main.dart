@@ -13,11 +13,12 @@ import 'pages/student_dashboard_page.dart';
 import 'pages/teacher_dashboard_page.dart';
 import 'pages/explainable_ai_feedback_page.dart';
 import 'pages/review_schedule_page.dart';
+import 'pages/email_verification_page.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
 import 'models/student_learning_models.dart';
 import 'services/user_role_service.dart';
-import 'services/student_learning_service.dart';
+import 'services/notification_service.dart';
 import 'widgets/logo_popup.dart';
 import 'widgets/student_app_shell.dart';
 import 'pages/upload_material_page.dart';
@@ -65,6 +66,7 @@ class MyApp extends StatelessWidget {
         '/landing':   (_) => const LandingPage(),
         '/login':     (_) => LoginPage(),
         '/signup':    (_) => SignupPage(),
+        '/verify-email': (_) => const EmailVerificationPage(),
         // ── Authenticated routes ──
         '/dashboard': (_) => const _RoleRouter(),
         '/student-dashboard': (_) => _StudentDashboardRoute(),
@@ -136,7 +138,10 @@ class AuthGate extends StatelessWidget {
         }
         if (!snapshot.hasData) return const LandingPage();
 
-        final uid = snapshot.data!.uid;
+        final user = snapshot.data!;
+        if (!user.emailVerified) return const EmailVerificationPage();
+
+        final uid = user.uid;
         return FutureBuilder<String>(
           future: UserRoleService().getCurrentUserRole(),
           builder: (context, roleSnap) {
@@ -158,7 +163,11 @@ class _RoleRouter extends StatelessWidget {
   const _RoleRouter();
   @override
   Widget build(BuildContext context) {
-    final uid = FirebaseAuth.instance.currentUser?.uid ?? 'student-demo';
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null && !currentUser.emailVerified) {
+      return const EmailVerificationPage();
+    }
+    final uid = currentUser?.uid ?? 'student-demo';
     return FutureBuilder<String>(
       future: UserRoleService().getCurrentUserRole(),
       builder: (context, snap) {
@@ -203,12 +212,21 @@ class _StudentShellRoute extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StudentAppShell(
-      activeSection: activeSection,
-      userName: currentAuthUserName(),
-      notificationCount: 0,
-      onSectionSelected: (section) => _openSection(context, section),
-      child: child,
+    return StreamBuilder<List<AppNotification>>(
+      stream: FirebaseAuth.instance.currentUser == null
+          ? const Stream<List<AppNotification>>.empty()
+          : NotificationService().watchCurrentUserNotifications(),
+      builder: (context, snapshot) {
+        final unread =
+            snapshot.data?.where((n) => !n.isRead).length ?? 0;
+        return StudentAppShell(
+          activeSection: activeSection,
+          userName: currentAuthUserName(),
+          notificationCount: unread,
+          onSectionSelected: (section) => _openSection(context, section),
+          child: child,
+        );
+      },
     );
   }
 

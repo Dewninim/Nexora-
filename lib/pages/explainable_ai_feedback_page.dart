@@ -17,13 +17,12 @@ class ExplainableAiFeedbackPage extends StatelessWidget {
   final String feedbackId;
   final StudentLearningService? service;
   // When provided (e.g. navigated to from a just-submitted session), this
-  // is used directly instead of fetching from the mock
-  // FirestoreStudentLearningService — same page, same layout, real content
-  // built from that session's actual backend response.
+  // is used directly instead of fetching anything — same page, same
+  // layout, real content built from that session's actual backend response.
   final AiFeedbackData? initialData;
   // When true (the default when reached from normal navigation, not from
   // a just-submitted session), shows a picker over this student's REAL
-  // past sessions instead of jumping straight to one mock concept.
+  // past sessions.
   final bool browseSessions;
 
   const ExplainableAiFeedbackPage({
@@ -36,7 +35,7 @@ class ExplainableAiFeedbackPage extends StatelessWidget {
   });
 
   StudentLearningService get _service =>
-      service ?? FirestoreStudentLearningService();
+      service ?? BackendStudentLearningService();
 
   String get _studentId =>
       studentId ?? FirebaseAuth.instance.currentUser?.uid ?? 'student-demo';
@@ -68,15 +67,18 @@ class ExplainableAiFeedbackPage extends StatelessWidget {
       ),
       builder: (context, snapshot) {
         final data = snapshot.data;
+        final done = snapshot.connectionState == ConnectionState.done;
 
         return StudentAppShell(
           activeSection: StudentNavSection.aiFeedback,
           userName: currentAuthUserName(),
           notificationCount: 0,
           onSectionSelected: (section) => _openSection(context, section),
-          child: data == null
-              ? const Center(child: CircularProgressIndicator())
-              : _FeedbackContent(data: data, service: _service),
+          child: data != null
+              ? _FeedbackContent(data: data, service: _service)
+              : done
+                  ? const _NoSessionsYetState(hasError: false)
+                  : const Center(child: CircularProgressIndicator()),
         );
       },
     );
@@ -222,15 +224,9 @@ class _SessionHistoryBrowserState extends State<_SessionHistoryBrowser> {
         }
         final sessions = snap.data ?? [];
         if (snap.hasError || sessions.isEmpty) {
-          // No real history yet — fall back to the mock single-concept view
-          // so the page still shows something meaningful on a first visit.
-          return FutureBuilder<AiFeedbackData>(
-            future: widget.service.getFeedbackForConcept(studentId: widget.studentId, feedbackId: widget.feedbackId),
-            builder: (context, mockSnap) {
-              if (mockSnap.data == null) return const Center(child: CircularProgressIndicator());
-              return _FeedbackContent(data: mockSnap.data!, service: widget.service);
-            },
-          );
+          // No real session history yet — show an honest empty state
+          // instead of fabricated feedback content.
+          return _NoSessionsYetState(hasError: snap.hasError);
         }
         return ListView(
           padding: const EdgeInsets.all(24),
@@ -256,6 +252,52 @@ class _SessionHistoryBrowserState extends State<_SessionHistoryBrowser> {
           const SizedBox(height: 12),
           TextButton(onPressed: onBack, child: const Text('Back')),
         ],
+      ),
+    );
+  }
+}
+
+/// Honest empty state for a student with no completed sessions yet (or an
+/// unreachable backend) — replaces the old behaviour of silently rendering
+/// fabricated mock feedback in this slot.
+class _NoSessionsYetState extends StatelessWidget {
+  final bool hasError;
+  const _NoSessionsYetState({required this.hasError});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              hasError ? Icons.cloud_off_rounded : Icons.auto_awesome_outlined,
+              size: 40,
+              color: neuromathixMuted,
+            ),
+            const SizedBox(height: 14),
+            Text(
+              hasError ? "Couldn't reach the server" : 'No AI feedback yet',
+              style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w800, color: neuromathixText),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              hasError
+                  ? 'Check your connection and try again in a moment.'
+                  : 'Complete a learning session to see detailed, session-specific AI feedback here.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.dmSans(fontSize: 13.5, color: neuromathixMuted, height: 1.5),
+            ),
+            const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/upload'),
+              icon: const Icon(Icons.upload_file_outlined, size: 16),
+              label: Text('Upload Material', style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -358,6 +400,28 @@ class _FeedbackContent extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               _RetentionExplanationCard(data: data),
+              if (data.schedulingFactors.isNotEmpty) ...[
+                const SizedBox(height: 34),
+                _SchedulingExplanationCard(data: data),
+              ],
+              if (data.questionFeedback.isNotEmpty) ...[
+                const SizedBox(height: 34),
+                Text(
+                  'Question-by-Question Feedback',
+                  style: GoogleFonts.dmSans(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: neuromathixText,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Every question in this session, explained individually — not just the one below.',
+                  style: GoogleFonts.dmSans(fontSize: 14, color: neuromathixMuted),
+                ),
+                const SizedBox(height: 18),
+                _QuestionFeedbackList(items: data.questionFeedback),
+              ],
               const SizedBox(height: 34),
               Text(
                 'Key Factors Analysis',
@@ -596,7 +660,7 @@ class _RetentionSummary extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'CURRENT RETENTION',
+          'RIGHT AFTER THIS SESSION',
           style: GoogleFonts.dmSans(
             color: neuromathixMuted,
             fontSize: 16,
@@ -618,8 +682,12 @@ class _RetentionSummary extends StatelessWidget {
                 color: neuromathixText,
               ),
             ),
+            // Not a live decline — this is what the same Ebbinghaus curve
+            // predicts happening BETWEEN now and the next review date if
+            // you don't reinforce it, so it can't be misread as
+            // simultaneous with the 100% above it.
             Text(
-              '↓${data.declinePercent}% decline',
+              '↓${data.declinePercent}% predicted by next review',
               style: GoogleFonts.dmSans(
                 color: Color(0xFFFF414D),
                 fontSize: 16,
@@ -703,6 +771,162 @@ class _RetentionSummary extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// "How we calculated this" reveal for the next-review date — a real,
+/// step-by-step trace of the backend/app.py:compute_forgetting_curve()
+/// inputs (accuracy, mistakes, hints, session count, the study mode/period
+/// chosen at upload), not decorative copy. This is the direct answer to
+/// "why this date" that the plain next-review card doesn't spell out.
+class _SchedulingExplanationCard extends StatefulWidget {
+  final AiFeedbackData data;
+  const _SchedulingExplanationCard({required this.data});
+
+  @override
+  State<_SchedulingExplanationCard> createState() => _SchedulingExplanationCardState();
+}
+
+class _SchedulingExplanationCardState extends State<_SchedulingExplanationCard> {
+  int _revealed = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _reveal();
+  }
+
+  void _reveal() {
+    Future.delayed(const Duration(milliseconds: 350), () {
+      if (!mounted || _revealed >= widget.data.schedulingFactors.length) return;
+      setState(() => _revealed++);
+      _reveal();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final data = widget.data;
+    return _WhitePanel(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.psychology_alt_outlined, color: neuromathixBlue, size: 22),
+              const SizedBox(width: 10),
+              Text(
+                'How we calculated your next review',
+                style: GoogleFonts.dmSans(
+                  fontSize: 19,
+                  fontWeight: FontWeight.w900,
+                  color: neuromathixText,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Every input below came from this session — nothing here is a fixed schedule.',
+            style: GoogleFonts.dmSans(fontSize: 13, color: neuromathixMuted),
+          ),
+          const SizedBox(height: 20),
+          for (var i = 0; i < data.schedulingFactors.length; i++)
+            AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              opacity: i < _revealed ? 1 : 0.15,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 22,
+                      height: 22,
+                      margin: const EdgeInsets.only(top: 1),
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Color(0xFF16A34A),
+                      ),
+                      child: const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                data.schedulingFactors[i].title,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  color: neuromathixText,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                data.schedulingFactors[i].value,
+                                style: GoogleFonts.dmSans(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: neuromathixBlue,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            data.schedulingFactors[i].description,
+                            style: GoogleFonts.dmSans(fontSize: 12.5, color: neuromathixMuted, height: 1.4),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          if (data.nextReviewDate != null) ...[
+            const SizedBox(height: 8),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF2F6FF),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFD7E4FF)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.event_available_rounded, color: neuromathixBlue, size: 20),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text.rich(
+                      TextSpan(
+                        style: GoogleFonts.dmSans(fontSize: 14, color: neuromathixText, fontWeight: FontWeight.w600),
+                        children: [
+                          const TextSpan(text: 'Next review scheduled for '),
+                          TextSpan(
+                            text: data.nextReviewDate,
+                            style: GoogleFonts.dmSans(fontWeight: FontWeight.w900, color: neuromathixBlue),
+                          ),
+                          if (data.nextReviewDays != null)
+                            TextSpan(
+                              text: ' (in ${data.nextReviewDays} day${data.nextReviewDays == 1 ? '' : 's'}).',
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }
@@ -969,6 +1193,175 @@ class _ForgettingCurvePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _ForgettingCurvePainter oldDelegate) {
     return oldDelegate.data != data;
+  }
+}
+
+/// One expandable card per question in the session — every question gets
+/// its own real XAI explanation here, not just the single "focus" concept
+/// shown in the header above. Incorrect answers start expanded (that's
+/// where the detail matters most); correct ones start collapsed.
+class _QuestionFeedbackList extends StatelessWidget {
+  final List<QuestionFeedback> items;
+  const _QuestionFeedbackList({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        for (var i = 0; i < items.length; i++) ...[
+          _QuestionFeedbackCard(index: i + 1, item: items[i]),
+          if (i != items.length - 1) const SizedBox(height: 12),
+        ],
+      ],
+    );
+  }
+}
+
+class _QuestionFeedbackCard extends StatefulWidget {
+  final int index;
+  final QuestionFeedback item;
+  const _QuestionFeedbackCard({required this.index, required this.item});
+
+  @override
+  State<_QuestionFeedbackCard> createState() => _QuestionFeedbackCardState();
+}
+
+class _QuestionFeedbackCardState extends State<_QuestionFeedbackCard> {
+  late bool _expanded = !widget.item.isCorrect;
+
+  @override
+  Widget build(BuildContext context) {
+    final item = widget.item;
+    final statusColor = item.isCorrect ? AppColors.success : AppColors.error;
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: item.isCorrect ? neuromathixBorder : statusColor.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(12),
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 28,
+                    height: 28,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: statusColor.withValues(alpha: 0.12), shape: BoxShape.circle),
+                    child: Icon(
+                      item.isCorrect ? Icons.check_rounded : Icons.close_rounded,
+                      size: 18,
+                      color: statusColor,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Question ${widget.index} · ${item.topic}',
+                          style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700, color: neuromathixMuted),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.questionText,
+                          maxLines: _expanded ? null : 1,
+                          overflow: _expanded ? null : TextOverflow.ellipsis,
+                          style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w700, color: neuromathixText),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Icon(_expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded, color: neuromathixMuted),
+                ],
+              ),
+            ),
+          ),
+          if (_expanded)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(18, 0, 18, 18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Divider(height: 1, color: neuromathixBorder),
+                  const SizedBox(height: 14),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _AnswerPill(
+                          label: 'Your answer',
+                          value: item.yourAnswer,
+                          color: statusColor,
+                        ),
+                      ),
+                      if (!item.isCorrect) ...[
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: _AnswerPill(
+                            label: 'Correct answer',
+                            value: item.correctAnswer,
+                            color: AppColors.success,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    item.xaiText,
+                    style: GoogleFonts.dmSans(fontSize: 13.5, color: neuromathixText, height: 1.55),
+                  ),
+                  if (item.hintsUsed > 0) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      '💡 ${item.hintsUsed} hint${item.hintsUsed == 1 ? '' : 's'} used on this question.',
+                      style: GoogleFonts.dmSans(fontSize: 12, color: neuromathixMuted, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnswerPill extends StatelessWidget {
+  final String label;
+  final String value;
+  final Color color;
+  const _AnswerPill({required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label.toUpperCase(),
+              style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.w800, color: neuromathixMuted, letterSpacing: 0.6)),
+          const SizedBox(height: 3),
+          Text(value, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700, color: neuromathixText)),
+        ],
+      ),
+    );
   }
 }
 

@@ -1,0 +1,222 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return signedIn() && request.auth.uid == userId;
+    }
+
+    function userDocument(userId) {
+      return get(/databases/$(database)/documents/users/$(userId));
+    }
+
+    function isTeacher() {
+      return signedIn() && (
+        request.auth.token.role == 'teacher' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+          userDocument(request.auth.uid).data.role == 'teacher')
+      );
+    }
+
+    function assignedTeacher(studentId) {
+      return isTeacher() &&
+        exists(/databases/$(database)/documents/users/$(studentId)) &&
+        userDocument(studentId).data.teacherId == request.auth.uid;
+    }
+
+    function isHelpParticipant(helpRequestId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/helpRequests/$(helpRequestId))
+        && (
+          get(/databases/$(database)/documents/helpRequests/$(helpRequestId)).data.studentId == request.auth.uid ||
+          get(/databases/$(database)/documents/helpRequests/$(helpRequestId)).data.teacherId == request.auth.uid
+        );
+    }
+
+    match /users/{userId} {
+      allow create: if isOwner(userId)
+        && request.resource.data.uid == userId
+        && request.resource.data.role == 'student'
+        && request.resource.data.accountStatus == 'active';
+
+      // A teacher query must constrain role == "student". This lets the
+      // assignment screen find a student by email without exposing teachers.
+      allow read: if isOwner(userId)
+        || (isTeacher() && resource.data.role == 'student');
+
+      allow update: if (
+        isOwner(userId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'firstName',
+          'lastName',
+          'displayName',
+          'photoUrl',
+          'learningPreferences',
+          'notificationPreferences',
+          'settings',
+          'lastLoginAt',
+          'emailVerified',
+          'updatedAt'
+        ])
+      ) || (
+        isTeacher()
+        && resource.data.role == 'student'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'teacherId',
+          'updatedAt'
+        ])
+        && (resource.data.teacherId == null
+          || resource.data.teacherId == request.auth.uid)
+        && (request.resource.data.teacherId == null
+          || request.resource.data.teacherId == request.auth.uid)
+      );
+
+      allow delete: if false;
+    }
+
+    match /reviewSchedules/{scheduleId} {
+      allow read: if signedIn() && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid ||
+        assignedTeacher(resource.data.studentId)
+      );
+
+      allow create: if signedIn() && (
+        request.resource.data.studentId == request.auth.uid ||
+        (isTeacher()
+          && request.resource.data.teacherId == request.auth.uid
+          && assignedTeacher(request.resource.data.studentId))
+      );
+
+      allow update: if signedIn() && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid ||
+        assignedTeacher(resource.data.studentId)
+      )
+      && request.resource.data.studentId == resource.data.studentId;
+
+      allow delete: if isTeacher() && (
+        resource.data.teacherId == request.auth.uid ||
+        assignedTeacher(resource.data.studentId)
+      );
+    }
+
+    match /teacherStudentSummaries/{studentId} {
+      allow read: if isOwner(studentId)
+        || (isTeacher() && resource.data.teacherId == request.auth.uid);
+
+      allow create: if (
+        isOwner(studentId)
+        && request.resource.data.studentId == studentId
+        && request.resource.data.teacherId == userDocument(studentId).data.teacherId
+      ) || (
+        isTeacher()
+        && request.resource.data.studentId == studentId
+        && request.resource.data.teacherId == request.auth.uid
+        && assignedTeacher(studentId)
+      );
+
+      allow update: if (
+        isOwner(studentId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'currentTopic',
+          'masteryPercent',
+          'retentionPercent',
+          'nextReviewAt',
+          'lastActiveAt',
+          'updatedAt',
+          'displayName',
+          'email',
+          'teacherId'
+        ])
+      ) || (
+        isTeacher()
+        && resource.data.teacherId == request.auth.uid
+        && assignedTeacher(studentId)
+      );
+
+      allow delete: if isTeacher()
+        && resource.data.teacherId == request.auth.uid;
+    }
+
+    match /helpRequests/{requestId} {
+      allow create: if signedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && request.resource.data.teacherId == userDocument(request.auth.uid).data.teacherId;
+
+      allow read: if signedIn() && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid
+      );
+
+      allow update: if signedIn() && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.teacherId == request.auth.uid
+      )
+      && request.resource.data.studentId == resource.data.studentId
+      && request.resource.data.teacherId == resource.data.teacherId;
+
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read, create: if isHelpParticipant(requestId);
+        allow update, delete: if false;
+      }
+    }
+
+    match /teacherMessages/{messageId} {
+      allow create: if isTeacher()
+        && request.resource.data.teacherId == request.auth.uid
+        && assignedTeacher(request.resource.data.studentId);
+
+      allow read: if signedIn() && (
+        resource.data.teacherId == request.auth.uid ||
+        resource.data.studentId == request.auth.uid
+      );
+
+      allow update: if signedIn()
+        && resource.data.studentId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'isRead',
+          'readAt'
+        ]);
+
+      allow delete: if false;
+    }
+
+    match /notifications/{notificationId} {
+      allow create: if signedIn() && (
+        request.resource.data.userId == request.auth.uid ||
+        (isTeacher() && assignedTeacher(request.resource.data.userId))
+      );
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'isRead',
+          'readAt'
+        ]);
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+    }
+
+    match /student_dashboards/{studentId} {
+      allow read: if isOwner(studentId) || assignedTeacher(studentId);
+      allow create, update: if isOwner(studentId);
+      allow delete: if false;
+    }
+
+    match /ai_feedback/{feedbackId} {
+      allow read: if signedIn() && (
+        resource.data.studentId == request.auth.uid ||
+        assignedTeacher(resource.data.studentId)
+      );
+      allow create, update: if signedIn()
+        && request.resource.data.studentId == request.auth.uid;
+      allow delete: if false;
+    }
+  }
+}

@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/app_theme.dart';
-import '../widgets/teacher_app_shell.dart';
+import '../services/teacher_service.dart';
 
 class TeacherMessageDialog extends StatefulWidget {
+  final String studentId;
   final String studentName;
 
   const TeacherMessageDialog({
     super.key,
+    required this.studentId,
     required this.studentName,
   });
 
@@ -17,24 +19,50 @@ class TeacherMessageDialog extends StatefulWidget {
 }
 
 class _TeacherMessageDialogState extends State<TeacherMessageDialog> {
-  final _toController = TextEditingController();
-  final _subjectController = TextEditingController();
+  final TeacherService _service = TeacherService();
+  final _subjectController = TextEditingController(text: 'Learning support');
   final _messageController = TextEditingController();
-
-  DateTime _date = DateTime(2026, 2, 6);
-
-  @override
-  void initState() {
-    super.initState();
-    _toController.text = widget.studentName;
-  }
+  final _practiceController = TextEditingController();
+  bool _sending = false;
+  String? _error;
 
   @override
   void dispose() {
-    _toController.dispose();
     _subjectController.dispose();
     _messageController.dispose();
+    _practiceController.dispose();
     super.dispose();
+  }
+
+  Future<void> _send() async {
+    final subject = _subjectController.text.trim();
+    final message = _messageController.text.trim();
+    if (subject.isEmpty || message.isEmpty) {
+      setState(() => _error = 'Enter a subject and message.');
+      return;
+    }
+    setState(() {
+      _sending = true;
+      _error = null;
+    });
+    try {
+      await _service.sendDirectMessage(
+        studentId: widget.studentId,
+        subject: subject,
+        message: message,
+        practiceQuestion: _practiceController.text.trim().isEmpty
+            ? null
+            : _practiceController.text.trim(),
+      );
+      if (!mounted) return;
+      Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _sending = false;
+        _error = error.toString().replaceFirst('Exception: ', '');
+      });
+    }
   }
 
   @override
@@ -77,33 +105,9 @@ class _TeacherMessageDialogState extends State<TeacherMessageDialog> {
                 ),
                 const SizedBox(height: 22),
 
-                const _FieldLabel('To'),
-                const SizedBox(height: 10),
-                _InputPill(controller: _toController, hint: ''),
-                const SizedBox(height: 18),
-
                 const _FieldLabel('Subject'),
                 const SizedBox(height: 10),
-                Row(
-                  children: [
-                    Expanded(
-                      child: _InputPill(controller: _subjectController, hint: ''),
-                    ),
-                    const SizedBox(width: 14),
-                    _DatePill(
-                      date: _date,
-                      onPick: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _date,
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2035),
-                        );
-                        if (picked != null) setState(() => _date = picked);
-                      },
-                    ),
-                  ],
-                ),
+                _InputPill(controller: _subjectController, hint: ''),
                 const SizedBox(height: 22),
 
                 Text(
@@ -117,13 +121,18 @@ class _TeacherMessageDialogState extends State<TeacherMessageDialog> {
                   children: [
                     _TemplateButton(
                       label: 'Review Soon',
-                      onTap: () => _messageController.text =
-                          'Please review the module soon and let me know if you need help.',
+                      onTap: () => setState(() => _messageController.text =
+                          'Please review the module soon and let me know if you need help.'),
                     ),
                     _TemplateButton(
                       label: 'Practice More!',
-                      onTap: () => _messageController.text =
-                          'You should practice more questions to strengthen your understanding.',
+                      onTap: () => setState(() => _messageController.text =
+                          'You should practice more questions to strengthen your understanding.'),
+                    ),
+                    _TemplateButton(
+                      label: 'Good Progress',
+                      onTap: () => setState(() => _messageController.text =
+                          'You are improving well — keep following your review schedule.'),
                     ),
                   ],
                 ),
@@ -136,8 +145,21 @@ class _TeacherMessageDialogState extends State<TeacherMessageDialog> {
                 const SizedBox(height: 12),
                 _BigMessageBox(
                   controller: _messageController,
-                  hint: 'Type your Message here..',
+                  hint: 'Type your message here..',
                 ),
+                const SizedBox(height: 18),
+
+                const _FieldLabel('Optional practice question'),
+                const SizedBox(height: 10),
+                _InputPill(controller: _practiceController, hint: 'e.g. 2x² + 7x + 3 = 0'),
+
+                if (_error != null) ...[
+                  const SizedBox(height: 14),
+                  Text(
+                    _error!,
+                    style: GoogleFonts.dmSans(color: AppColors.error, fontSize: 12.5, fontWeight: FontWeight.w600),
+                  ),
+                ],
                 const SizedBox(height: 22),
 
                 Row(
@@ -146,15 +168,15 @@ class _TeacherMessageDialogState extends State<TeacherMessageDialog> {
                       child: _ActionButton(
                         label: 'Cancel',
                         primary: false,
-                        onTap: () => Navigator.pop(context),
+                        onTap: _sending ? null : () => Navigator.pop(context),
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: _ActionButton(
-                        label: 'Send',
+                        label: _sending ? 'Sending...' : 'Send',
                         primary: true,
-                        onTap: () => Navigator.pop(context),
+                        onTap: _sending ? null : _send,
                       ),
                     ),
                   ],
@@ -212,49 +234,6 @@ class _InputPill extends StatelessWidget {
             borderRadius: BorderRadius.circular(12),
             borderSide: const BorderSide(color: AppColors.primary, width: 2),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-/* ---------------- DATE ---------------- */
-
-class _DatePill extends StatelessWidget {
-  final DateTime date;
-  final VoidCallback onPick;
-
-  const _DatePill({
-    required this.date,
-    required this.onPick,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    final label = '${two(date.month)}/${two(date.day)}/${date.year}';
-
-    return InkWell(
-      onTap: onPick,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        height: 52,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(width: 10),
-            const Icon(Icons.calendar_month_rounded, size: 20),
-          ],
         ),
       ),
     );
@@ -332,7 +311,7 @@ class _BigMessageBox extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   final String label;
   final bool primary;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
 
   const _ActionButton({
     required this.label,

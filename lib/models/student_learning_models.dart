@@ -347,6 +347,54 @@ class RetentionCurvePoint {
   }
 }
 
+class QuestionFeedback {
+  final String questionId;
+  final String questionText;
+  final String topic;
+  final bool isCorrect;
+  final String yourAnswer;
+  final String correctAnswer;
+  final String xaiText;
+  final int hintsUsed;
+
+  const QuestionFeedback({
+    required this.questionId,
+    required this.questionText,
+    required this.topic,
+    required this.isCorrect,
+    required this.yourAnswer,
+    required this.correctAnswer,
+    required this.xaiText,
+    required this.hintsUsed,
+  });
+
+  factory QuestionFeedback.fromJson(Map<String, dynamic> json) {
+    return QuestionFeedback(
+      questionId: json['questionId'] as String,
+      questionText: json['questionText'] as String,
+      topic: json['topic'] as String,
+      isCorrect: json['isCorrect'] as bool,
+      yourAnswer: json['yourAnswer'] as String,
+      correctAnswer: json['correctAnswer'] as String,
+      xaiText: json['xaiText'] as String,
+      hintsUsed: json['hintsUsed'] as int? ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'questionId': questionId,
+      'questionText': questionText,
+      'topic': topic,
+      'isCorrect': isCorrect,
+      'yourAnswer': yourAnswer,
+      'correctAnswer': correctAnswer,
+      'xaiText': xaiText,
+      'hintsUsed': hintsUsed,
+    };
+  }
+}
+
 class ExplanationFactor {
   final String id;
   final String title;
@@ -433,6 +481,18 @@ class AiFeedbackData {
   final String guidanceBody;
   final List<ReportMetricRow> reportRows;
   final DateTime generatedAt;
+  // Real next-review scheduling, and the step-by-step breakdown of how it
+  // was calculated (accuracy, hints, memory strength, the study
+  // mode/period the student chose at upload time) — see
+  // compute_forgetting_curve() in backend/app.py for the source formula.
+  final String? nextReviewDate;
+  final int? nextReviewDays;
+  final List<ExplanationFactor> schedulingFactors;
+  // One entry per question in the session — not just the single weakest
+  // "focus" question. Each carries that question's own real XAI text
+  // (Gemini's per-question explanation from backend/app.py's batch XAI
+  // call), so every question gets a real explanation, not just one.
+  final List<QuestionFeedback> questionFeedback;
 
   const AiFeedbackData({
     required this.id,
@@ -452,6 +512,10 @@ class AiFeedbackData {
     required this.guidanceBody,
     required this.reportRows,
     required this.generatedAt,
+    this.nextReviewDate,
+    this.nextReviewDays,
+    this.schedulingFactors = const [],
+    this.questionFeedback = const [],
   });
 
   RetentionCurvePoint get currentPoint {
@@ -491,6 +555,20 @@ class AiFeedbackData {
           .map((item) => ReportMetricRow.fromJson(item as Map<String, dynamic>))
           .toList(),
       generatedAt: DateTime.parse(json['generatedAt'] as String),
+      nextReviewDate: json['nextReviewDate'] as String?,
+      nextReviewDays: json['nextReviewDays'] as int?,
+      schedulingFactors: (json['schedulingFactors'] as List<dynamic>?)
+              ?.map(
+                (item) => ExplanationFactor.fromJson(item as Map<String, dynamic>),
+              )
+              .toList() ??
+          const [],
+      questionFeedback: (json['questionFeedback'] as List<dynamic>?)
+              ?.map(
+                (item) => QuestionFeedback.fromJson(item as Map<String, dynamic>),
+              )
+              .toList() ??
+          const [],
     );
   }
 
@@ -513,6 +591,10 @@ class AiFeedbackData {
       'guidanceBody': guidanceBody,
       'reportRows': reportRows.map((item) => item.toJson()).toList(),
       'generatedAt': generatedAt.toIso8601String(),
+      'nextReviewDate': nextReviewDate,
+      'nextReviewDays': nextReviewDays,
+      'schedulingFactors': schedulingFactors.map((item) => item.toJson()).toList(),
+      'questionFeedback': questionFeedback.map((item) => item.toJson()).toList(),
     };
   }
 }

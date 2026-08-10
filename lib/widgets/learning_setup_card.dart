@@ -11,6 +11,15 @@ const Color _textSub     = Color(0xFF64748B);
 const Color _textMuted   = Color(0xFF94A3B8);
 const Color _success     = Color(0xFF10B981);
 
+// Reads backend/app.py's real SHAP TreeExplainer output for Model 1's
+// difficulty prediction (difficulty_summary.difficulty_explanation, set in
+// the /upload response) — not derived or invented here, just parsed.
+List<Map<String, dynamic>> _shapWords(Map<String, dynamic>? difficultySummary) {
+  final raw = difficultySummary?['difficulty_explanation'];
+  if (raw is! List) return const [];
+  return raw.whereType<Map>().map((e) => Map<String, dynamic>.from(e)).toList();
+}
+
 class LearningSetupCard extends StatefulWidget {
   const LearningSetupCard({super.key});
 
@@ -98,6 +107,16 @@ class _SetupState extends State<LearningSetupCard>
                       ),
                     ]),
                   ),
+
+                  if (_shapWords(s.difficultySummary).isNotEmpty) ...[
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(28, 0, 28, 24),
+                      child: _DifficultyExplanationPanel(
+                        avgScore: (s.difficultySummary?['avg_score'] as num?)?.toDouble(),
+                        words: _shapWords(s.difficultySummary),
+                      ),
+                    ),
+                  ],
 
                   const Divider(height: 1, color: Color(0xFFE8ECF0)),
 
@@ -498,6 +517,83 @@ class _StartButtonState extends State<_StartButton> {
                   ],
                 ),
         ),
+      ),
+    );
+  }
+}
+
+/// Real SHAP (TreeExplainer) feature attribution for Model 1's difficulty
+/// score on this material's hardest sections — which words in the text
+/// actually pushed the RandomForest toward that rating. Not Gemini-authored
+/// text (SHAP doesn't apply to the free-text grading XAI shown elsewhere in
+/// the app) — every word/number here comes straight from
+/// backend/app.py:explain_difficulty().
+class _DifficultyExplanationPanel extends StatelessWidget {
+  final double? avgScore;
+  final List<Map<String, dynamic>> words;
+
+  const _DifficultyExplanationPanel({required this.avgScore, required this.words});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFE2E8F0)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.query_stats_rounded, size: 17, color: _accentBlue),
+              const SizedBox(width: 8),
+              Text(
+                'Why we rated the hardest sections this way (SHAP)',
+                style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700, color: _textPrimary),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            avgScore != null
+                ? 'Average difficulty ${avgScore!.toStringAsFixed(1)}/5 — feature attribution from Model 1\'s RandomForest classifier.'
+                : 'Feature attribution from Model 1\'s RandomForest classifier.',
+            style: GoogleFonts.dmSans(fontSize: 11.5, color: _textMuted),
+          ),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: words.map((w) {
+              final increases = w['direction'] == 'increases';
+              final color = increases ? const Color(0xFFDC2626) : const Color(0xFF16A34A);
+              return Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: color.withOpacity(0.3)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(increases ? Icons.arrow_upward_rounded : Icons.arrow_downward_rounded,
+                        size: 12, color: color),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${w['word']}',
+                      style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700, color: _textPrimary),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

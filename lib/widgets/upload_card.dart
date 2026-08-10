@@ -199,12 +199,48 @@ class _DropZoneState extends State<_DropZone> {
 
 // ── Progress card ─────────────────────────────────────────────────────────────
 
-class _ProgressCard extends StatelessWidget {
+// The real progress fraction only moves at 0.15 -> 0.55 -> 1.0 (see
+// UploadProvider.processFile) because it tracks two backend HTTP calls, not
+// bytes — so it sits at 0.55 for the bulk of the wait. This caption cycles
+// on a timer instead, naming each real backend/app.py pipeline stage in the
+// order upload_provider.dart actually calls them: POST /upload (extract
+// text, OCR fallback, math-doc gate, Model 1 difficulty per chunk) then
+// POST /material/<id>/session/start (Gemini question generation).
+const _uploadStages = [
+  'Uploading your PDF…',
+  'Extracting text and checking it\'s math content…',
+  'Running Model 1 difficulty analysis on each section…',
+  'Generating your first personalised session with Gemini…',
+];
+
+class _ProgressCard extends StatefulWidget {
   final double progress;
   const _ProgressCard({super.key, required this.progress});
 
   @override
+  State<_ProgressCard> createState() => _ProgressCardState();
+}
+
+class _ProgressCardState extends State<_ProgressCard> {
+  int _stageIdx = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _cycle();
+  }
+
+  void _cycle() {
+    Future.delayed(const Duration(seconds: 4), () {
+      if (!mounted || _stageIdx >= _uploadStages.length - 1) return;
+      setState(() => _stageIdx++);
+      _cycle();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final progress = widget.progress;
     return Container(
       width: double.infinity,
       padding:
@@ -233,9 +269,14 @@ class _ProgressCard extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: _textPrimary)),
           const SizedBox(height: 4),
-          Text('Running AI difficulty analysis',
-              style: GoogleFonts.dmSans(
-                  fontSize: 13, color: _textMuted)),
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300),
+            child: Text(_uploadStages[_stageIdx],
+                key: ValueKey(_stageIdx),
+                textAlign: TextAlign.center,
+                style: GoogleFonts.dmSans(
+                    fontSize: 13, color: _textMuted)),
+          ),
           const SizedBox(height: 30),
           ClipRRect(
             borderRadius: BorderRadius.circular(100),

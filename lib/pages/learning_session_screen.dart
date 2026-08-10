@@ -27,6 +27,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../config/api_config.dart';
 import '../models/student_learning_models.dart';
+import '../services/review_schedule_service.dart';
 import '../theme/app_theme.dart';
 import 'explainable_ai_feedback_page.dart';
 
@@ -660,6 +661,16 @@ class _LearningSessionScreenState
         _submitResult = result;
         _phase        = SessionPhase.results;
       });
+      // Mirror the completed session into Firestore so the teacher
+      // dashboard and Cloud Functions notifications have real data — the
+      // Flask/Mongo response above stays the source of truth either way,
+      // so a failure here must never block the student seeing results.
+      unawaited(
+        ReviewScheduleService()
+            .saveFromSessionResult(result: result, fileName: widget.fileName)
+            .then((_) {})
+            .catchError((_) {}),
+      );
     } catch (e) {
       setState(() { _phase = SessionPhase.error; _error = e.toString(); });
     }
@@ -753,6 +764,8 @@ class _LearningSessionScreenState
           key: const ValueKey('r'),
           result: _submitResult!,
           questions: _questions,
+          studyMode: widget.studyMode,
+          studyDays: widget.studyDays,
         ),
       SessionPhase.error => _buildErrorView(),
     };
@@ -1827,15 +1840,10 @@ class _LoadingViewState extends State<_LoadingView>
               child: Text(_msgs[_msgIdx],
                   key: ValueKey(_msgIdx),
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary)),
+                  style: AppText.h3.copyWith(color: AppColors.primary)),
             ),
             const SizedBox(height: 10),
-            Text('This may take up to 30 seconds',
-                style: GoogleFonts.dmSans(
-                    fontSize: 12.5, color: AppColors.textFaint)),
+            Text('This may take up to 30 seconds', style: AppText.bodySmall),
           ],
         ),
       ),
@@ -1843,28 +1851,229 @@ class _LoadingViewState extends State<_LoadingView>
   }
 }
 
-class _SubmittingView extends StatelessWidget {
+/// A "thought process" trace for the wait between Submit and results —
+/// each line names a real stage of what backend/app.py's /submit route
+/// actually does, in the order it does it (grade every answer first, one
+/// batched Gemini call for XAI across all questions, then the forgetting
+/// curve + mastery computation). This isn't decorative filler: it's meant
+/// to make the wait legible, the same way a reasoning trace does.
+class _SubmittingView extends StatefulWidget {
   const _SubmittingView({super.key});
+  @override
+  State<_SubmittingView> createState() => _SubmittingViewState();
+}
+
+class _SubmittingViewState extends State<_SubmittingView> {
+  static const _steps = [
+    (
+      title: 'Grading every answer',
+      detail: 'Checking each response against the accepted solution methods.',
+      subPoints: [
+        'Fill-in-the-blank and short-answer responses matched against the expected value',
+        'Partial credit applied where a multi-part answer is partly right',
+      ],
+    ),
+    (
+      title: 'Generating XAI explanations',
+      detail: 'One Gemini call covering every question — why each answer was right or wrong.',
+      subPoints: [
+        'Every question gets its own explanation, not just the ones you missed',
+        'Wrong answers get the full step-by-step correct solution',
+      ],
+    ),
+    (
+      title: 'Calculating your forgetting curve',
+      detail: 'Ebbinghaus retention model, using this session\'s accuracy, hints and timing.',
+      subPoints: [
+        'Weighs this session against your accuracy, mistake rate and hint usage',
+        'Produces your personal memory-strength estimate for this material',
+      ],
+    ),
+    (
+      title: 'Updating your mastery profile',
+      detail: 'Comparing this session against your history to schedule the next review.',
+      subPoints: [
+        'Checks your last 3 sessions for sustained accuracy before marking mastery',
+        'Schedules your next review at the point retention is predicted to dip',
+      ],
+    ),
+  ];
+
+  int _step = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _advance();
+  }
+
+  void _advance() {
+    Future.delayed(const Duration(milliseconds: 1600), () {
+      if (!mounted || _step >= _steps.length - 1) return;
+      setState(() => _step++);
+      _advance();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const CircularProgressIndicator(
-              color: AppColors.accent, strokeWidth: 3),
-          const SizedBox(height: 20),
-          Text('Analysing your answers…',
-              style: GoogleFonts.dmSans(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.primary)),
-          const SizedBox(height: 6),
-          Text('XAI generating explanations + forgetting curve',
-              style: GoogleFonts.dmSans(
-                  fontSize: 12.5, color: AppColors.textFaint)),
-        ],
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 880),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('QUEUED', style: AppText.eyebrow),
+              const SizedBox(height: 6),
+              Text('Analysing your answers…', style: AppText.h1),
+              const SizedBox(height: 4),
+              Text('Here\'s what\'s happening while you wait.', style: AppText.bodySmall),
+              const SizedBox(height: 18),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3))],
+                ),
+                child: Column(
+                  children: [
+                    for (var i = 0; i < _steps.length; i++)
+                      _ThoughtStep(
+                        title: _steps[i].title,
+                        detail: _steps[i].detail,
+                        subPoints: _steps[i].subPoints,
+                        status: i < _step
+                            ? _ThoughtStatus.done
+                            : i == _step
+                                ? _ThoughtStatus.active
+                                : _ThoughtStatus.pending,
+                        isLast: i == _steps.length - 1,
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
+    );
+  }
+}
+
+enum _ThoughtStatus { done, active, pending }
+
+class _ThoughtStep extends StatelessWidget {
+  final String title;
+  final String detail;
+  final List<String> subPoints;
+  final _ThoughtStatus status;
+  final bool isLast;
+
+  const _ThoughtStep({
+    required this.title,
+    required this.detail,
+    required this.subPoints,
+    required this.status,
+    required this.isLast,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final active = status == _ThoughtStatus.active;
+    final done = status == _ThoughtStatus.done;
+    final dimmed = status == _ThoughtStatus.pending;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Column(
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 250),
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: done
+                    ? AppColors.success
+                    : active
+                        ? AppColors.accent
+                        : AppColors.bgPage,
+                border: Border.all(
+                  color: dimmed ? AppColors.border : Colors.transparent,
+                ),
+              ),
+              child: Center(
+                child: done
+                    ? const Icon(Icons.check_rounded, size: 14, color: Colors.white)
+                    : active
+                        ? const SizedBox(
+                            width: 10,
+                            height: 10,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white),
+                          )
+                        : null,
+              ),
+            ),
+            if (!isLast)
+              Container(
+                width: 2,
+                height: 34,
+                color: done ? AppColors.success : AppColors.border,
+              ),
+          ],
+        ),
+        const SizedBox(width: 14),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 22),
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 250),
+              opacity: dimmed ? 0.45 : 1,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: AppText.h3),
+                  const SizedBox(height: 3),
+                  Text(detail, style: AppText.bodySmall),
+                  if (active || done) ...[
+                    const SizedBox(height: 8),
+                    for (final point in subPoints)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 4),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Container(
+                                width: 4,
+                                height: 4,
+                                decoration: BoxDecoration(
+                                  color: AppColors.textFaint,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(point, style: AppText.caption.copyWith(fontWeight: FontWeight.w500)),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -1881,7 +2090,15 @@ class _SubmittingView extends StatelessWidget {
 class _ResultsView extends StatelessWidget {
   final Map<String, dynamic> result;
   final List<SessionQuestion> questions;
-  const _ResultsView({super.key, required this.result, required this.questions});
+  final String studyMode;
+  final int studyDays;
+  const _ResultsView({
+    super.key,
+    required this.result,
+    required this.questions,
+    required this.studyMode,
+    required this.studyDays,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1969,7 +2186,12 @@ class _ResultsView extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (_) => ExplainableAiFeedbackPage(
-                      initialData: buildRealAiFeedbackData(result, results),
+                      initialData: buildRealAiFeedbackData(
+                        result,
+                        results,
+                        studyMode: studyMode,
+                        studyDays: studyDays,
+                      ),
                     ),
                   ),
                 ),
@@ -2003,11 +2225,15 @@ class _ResultsView extends StatelessWidget {
 /// than tracking retention across several past sessions.
 AiFeedbackData buildRealAiFeedbackData(
   Map<String, dynamic> result,
-  List<QuestionResult> results,
-) {
+  List<QuestionResult> results, {
+  String studyMode = 'fixed',
+  int studyDays = 7,
+}) {
   final curve = result['forgetting_curve'] as Map<String, dynamic>? ?? {};
+  final profile = result['learner_profile'] as Map<String, dynamic>? ?? {};
   final stability = (curve['stability'] as num?)?.toDouble() ?? 5.0;
   final nextReviewDays = (result['next_review_days'] as num?)?.toDouble() ?? stability;
+  final nextReviewDate = result['next_review_date'] as String?;
   final uid = FirebaseAuth.instance.currentUser?.uid ?? 'student';
 
   // Focus concept = the weakest-scoring question this session (or the first
@@ -2062,6 +2288,94 @@ AiFeedbackData buildRealAiFeedbackData(
           ))
       .toList();
 
+  // Every question's own real XAI text (from backend/app.py's batch XAI
+  // call — each question got its own Gemini-written explanation, keyed by
+  // question_id) — not just the single "focus" question above. This is
+  // what actually answers "why was I right/wrong on THIS one" for every
+  // question in the session, not only the weakest one.
+  final questionFeedback = results
+      .map((r) => QuestionFeedback(
+            questionId: r.questionId,
+            questionText: r.questionText,
+            topic: r.topic,
+            isCorrect: r.isCorrect,
+            yourAnswer: r.yourAnswerText,
+            correctAnswer: r.correctAnswerText,
+            xaiText: (r.xai['xai_text'] as String?)?.trim().isNotEmpty == true
+                ? r.xai['xai_text'] as String
+                : (r.isCorrect
+                    ? 'Correct — well done.'
+                    : 'Compare your answer above against the correct one and re-trace where your working diverged.'),
+            hintsUsed: r.hintsUsed.length,
+          ))
+      .toList();
+
+  // "How your next review was calculated" — a real, honest breakdown of the
+  // backend/app.py:compute_forgetting_curve() inputs (not decorative):
+  // S = 1.0 + avg_score*3.5 - mistake_rate*2.0 - hint_press_rate*1.5 +
+  //     session_count*0.4, then paced by the study mode/period chosen at
+  // upload time. Same numbers the backend actually used, just explained.
+  final avgScore = (profile['avg_score'] as num?)?.toDouble() ??
+      (result['score'] as num?)?.toDouble() ?? 0;
+  final mistakeRate = (profile['mistake_rate'] as num?)?.toDouble() ?? 0;
+  final hintRate = (profile['hint_press_rate'] as num?)?.toDouble() ?? 0;
+  final sessionCount = (profile['session_count'] as num?)?.toInt() ?? 1;
+  final modeLabel =
+      studyMode == 'until_mastery' ? 'Study until mastery' : 'Fixed $studyDays-day plan';
+
+  final schedulingFactors = <ExplanationFactor>[
+    ExplanationFactor(
+      id: 'memoryAccuracy',
+      title: 'Accuracy history',
+      value: '${(avgScore * 100).round()}%',
+      description:
+          'Higher accuracy strengthens memory — contributes +${(avgScore * 3.5).toStringAsFixed(1)} days to your stability.',
+      tone: avgScore >= 0.7 ? 'green' : 'orange',
+    ),
+    ExplanationFactor(
+      id: 'memoryMistakes',
+      title: 'Mistake rate',
+      value: '${(mistakeRate * 100).round()}%',
+      description:
+          'Mistakes shorten how long you retain this — subtracts ${(mistakeRate * 2.0).toStringAsFixed(1)} days.',
+      tone: mistakeRate <= 0.3 ? 'green' : 'orange',
+    ),
+    ExplanationFactor(
+      id: 'memoryHints',
+      title: 'Hint dependency',
+      value: '${(hintRate * 100).round()}%',
+      description:
+          'Leaning on hints signals shakier recall — subtracts ${(hintRate * 1.5).toStringAsFixed(1)} days.',
+      tone: hintRate <= 0.3 ? 'green' : 'orange',
+    ),
+    ExplanationFactor(
+      id: 'memorySessions',
+      title: 'Sessions completed',
+      value: '$sessionCount',
+      description:
+          'Each completed session builds durability — adds ${(sessionCount * 0.4).toStringAsFixed(1)} days.',
+      tone: 'blue',
+    ),
+    ExplanationFactor(
+      id: 'studyPlan',
+      title: 'Your study plan',
+      value: modeLabel,
+      description: studyMode == 'until_mastery'
+          ? 'You chose to study until mastery — review gaps are paced between 1 and 14 days until you get there.'
+          : 'You chose a $studyDays-day plan — review gaps are capped so every session fits inside it.',
+      tone: 'purple',
+    ),
+    ExplanationFactor(
+      id: 'memoryStrength',
+      title: 'Resulting memory strength',
+      value: '${stability.toStringAsFixed(1)} days',
+      description: nextReviewDate != null
+          ? 'Combining all of the above: your next review is scheduled for $nextReviewDate — in ${nextReviewDays.round()} day${nextReviewDays.round() == 1 ? '' : 's'}.'
+          : 'This is how long your memory of this material is predicted to stay strong before it needs reinforcing.',
+      tone: 'blue',
+    ),
+  ];
+
   return AiFeedbackData(
     id: result['session_id'] as String? ?? 'session',
     studentId: uid,
@@ -2075,9 +2389,13 @@ AiFeedbackData buildRealAiFeedbackData(
         'You completed this session — here\'s the AI\'s read on how it went.',
     currentRetentionPercent: retentionAt(0).round(),
     declinePercent: (100 - retentionAt(nextReviewDays)).round(),
-    recoveryRetentionPercent: 95,
+    recoveryRetentionPercent: retentionAt(0).round(),
     retentionDescription:
-        'Based on this session\'s actual performance, your memory strength for this material is estimated at ${stability.toStringAsFixed(1)} days — reviewing at the scheduled time restores retention before it drops too far.',
+        'Right after finishing, recall is fresh. Based on this session, your memory strength here is ${stability.toStringAsFixed(1)} days, so without review it\'s predicted to fade to about ${retentionAt(nextReviewDays).round()}% by ${nextReviewDate ?? 'your next scheduled review'}.',
+    nextReviewDate: nextReviewDate,
+    nextReviewDays: nextReviewDays.round(),
+    schedulingFactors: schedulingFactors,
+    questionFeedback: questionFeedback,
     curve: curvePoints,
     factors: factors,
     guidanceTitle: focus != null && !focus.isCorrect ? 'How to improve on ${focus.topic}' : 'Keep up the momentum',

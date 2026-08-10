@@ -11,3 +11,9 @@ build/
 # Python
 backend/venv/
 backend/__pycache__/
+admin_tools/.venv/
+admin_tools/__pycache__/
+
+# Cloud Functions (Node/TypeScript)
+functions/node_modules/
+functions/lib/

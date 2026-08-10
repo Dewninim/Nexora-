@@ -9,16 +9,23 @@ class UserRoleService {
       : _auth = auth ?? FirebaseAuth.instance,
         _firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// Returns: "teacher" | "student" (default "student")
-  Future<String> getCurrentUserRole() async {
+  /// Returns `teacher` or `student`. Teacher custom claims are checked first,
+  /// while Firestore remains the display/profile source of truth.
+  Future<String> getCurrentUserRole({bool forceRefresh = false}) async {
     final user = _auth.currentUser;
     if (user == null) return 'student';
 
-    final doc = await _firestore.collection('users').doc(user.uid).get();
-    final data = doc.data();
+    try {
+      final token = await user.getIdTokenResult(forceRefresh);
+      final claimRole = token.claims?['role']?.toString().trim().toLowerCase();
+      if (claimRole == 'teacher') return 'teacher';
+    } catch (_) {
+      // Fall back to Firestore when claims cannot be refreshed.
+    }
 
-    final role = (data?['role'] as String?)?.trim().toLowerCase();
-    if (role == 'teacher') return 'teacher';
-    return 'student';
+    final document =
+        await _firestore.collection('users').doc(user.uid).get();
+    final role = document.data()?['role']?.toString().trim().toLowerCase();
+    return role == 'teacher' ? 'teacher' : 'student';
   }
 }

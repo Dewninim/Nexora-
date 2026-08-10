@@ -1,4 +1,8 @@
+import 'dart:convert';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+import '../config/api_config.dart';
 import '../models/student_learning_models.dart';
 abstract class StudentLearningService {
   Future<StudentDashboardData> getDashboard(String studentId);
@@ -14,151 +18,161 @@ abstract class StudentLearningService {
   });
 }
 
-class MockStudentLearningService implements StudentLearningService {
-  const MockStudentLearningService();
+/// Real implementation — every field is computed from the Flask/Mongo
+/// backend (GET /user/<uid>/analytics, GET /user/<uid>/materials) and the
+/// signed-in Firebase user, with unread notification count read from
+/// Firestore. Replaces the old FirestoreStudentLearningService, which just
+/// cached MockStudentLearningService's hand-authored numbers on first load.
+class BackendStudentLearningService implements StudentLearningService {
+  final http.Client _client;
+  final FirebaseFirestore _firestore;
+
+  BackendStudentLearningService({http.Client? client, FirebaseFirestore? firestore})
+      : _client = client ?? http.Client(),
+        _firestore = firestore ?? FirebaseFirestore.instance;
 
   @override
   Future<StudentDashboardData> getDashboard(String studentId) async {
+    final analyticsRes = await _client
+        .get(Uri.parse('$kApiBaseUrl/user/$studentId/analytics'))
+        .timeout(const Duration(seconds: 20));
+    if (analyticsRes.statusCode != 200) {
+      throw Exception('Could not load analytics (${analyticsRes.statusCode})');
+    }
+    final analytics = jsonDecode(analyticsRes.body) as Map<String, dynamic>;
+
+    List<Map<String, dynamic>> materials = const [];
+    try {
+      final materialsRes = await _client
+          .get(Uri.parse('$kApiBaseUrl/user/$studentId/materials'))
+          .timeout(const Duration(seconds: 20));
+      if (materialsRes.statusCode == 200) {
+        final body = jsonDecode(materialsRes.body) as Map<String, dynamic>;
+        materials = (body['materials'] as List? ?? const [])
+            .cast<Map<String, dynamic>>();
+      }
+    } catch (_) {
+      // Dashboard still renders with analytics-only data if this fails.
+    }
+
+    final trend = (analytics['masteryProgressTrend'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(RetentionPoint.fromJson)
+        .toList();
+    final topics = (analytics['topicMastery'] as List? ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(TopicMastery.fromJson)
+        .toList();
+
+    final overallMastery = analytics['overallMasteryPercent'] as int? ?? 0;
+    final problemsSolved = analytics['problemsSolved'] as int? ?? 0;
+    final studyTimeHours = (analytics['studyTimeHours'] as num?)?.toDouble() ?? 0;
+    final streak = analytics['currentStreakDays'] as int? ?? 0;
+
+    final retentionPercent =
+        trend.isNotEmpty ? trend.last.retentionPercent.round() : overallMastery;
+    final retentionDeltaLabel = trend.length >= 2
+        ? _deltaLabel(trend.last.retentionPercent - trend[trend.length - 2].retentionPercent)
+        : (trend.length == 1 ? 'First session recorded' : 'No sessions yet');
+
+    final now = DateTime.now();
+    final reviewCandidates = materials
+        .map(_ReviewCandidate.fromMaterialJson)
+        .whereType<_ReviewCandidate>()
+        .toList()
+      ..sort((a, b) => a.urgencyRank(now).compareTo(b.urgencyRank(now)));
+
+    final recommended = <RecommendedConcept>[
+      for (final entry in reviewCandidates.take(2).indexed)
+        RecommendedConcept(
+          id: entry.$2.materialId,
+          courseId: entry.$2.materialId,
+          category: 'Mathematics',
+          title: entry.$2.title,
+          retentionNote: entry.$2.retentionNote(now),
+          actionLabel: 'Review Concept',
+          feedbackId: entry.$2.materialId,
+          visualStyle:
+              entry.$1.isEven ? ConceptVisualStyle.mathematics : ConceptVisualStyle.neuroscience,
+        ),
+    ];
+
+    final quickCheck = reviewCandidates.isNotEmpty
+        ? QuizPrompt(
+            id: reviewCandidates.first.materialId,
+            tag: 'QUICK CHECK',
+            title: reviewCandidates.first.title,
+            subtitle: reviewCandidates.first.retentionNote(now),
+            actionLabel: 'Go to Review Schedule',
+          )
+        : const QuizPrompt(
+            id: 'upload-first',
+            tag: 'GET STARTED',
+            title: 'Upload your first material',
+            subtitle: 'Add a PDF to generate your first personalised session.',
+            actionLabel: 'Upload Material',
+          );
+
+    final user = FirebaseAuth.instance.currentUser;
+    final displayName = user?.displayName?.trim().split(RegExp(r'\s+')).first ??
+        user?.email?.split('@').first ??
+        'Student';
+
     return StudentDashboardData(
       studentId: studentId,
-      displayName: 'Kawya',
-      notificationCount: 3,
-      currentStreakDays: 12,
-      retentionPercent: 92,
-      retentionDeltaLabel: '+5% vs last week',
-      retentionTrend: const [
-        RetentionPoint(label: 'WEEK 1', retentionPercent: 18),
-        RetentionPoint(
-          label: 'WEEK 2',
-          retentionPercent: 36,
-          highlighted: true,
-        ),
-        RetentionPoint(
-          label: 'WEEK 3',
-          retentionPercent: 68,
-          highlighted: true,
-        ),
-        RetentionPoint(
-          label: 'CURRENT',
-          retentionPercent: 82,
-          highlighted: true,
-        ),
-        RetentionPoint(label: '', retentionPercent: 90),
-      ],
-      keyMetrics: const [
+      displayName: displayName,
+      notificationCount: await _unreadNotificationCount(studentId),
+      currentStreakDays: streak,
+      retentionPercent: retentionPercent,
+      retentionDeltaLabel: retentionDeltaLabel,
+      retentionTrend: trend,
+      keyMetrics: [
         DashboardKeyMetric(
-          id: 'focus',
-          label: 'Focus Score',
-          value: '8.4/10',
-          tone: 'green',
+          id: 'materials',
+          label: 'Materials Uploaded',
+          value: '${materials.length}',
+          tone: 'blue',
         ),
         DashboardKeyMetric(
           id: 'concepts',
-          label: 'Concepts Mastered',
-          value: '142',
-          tone: 'blue',
+          label: 'Problems Solved',
+          value: '$problemsSolved',
+          tone: 'green',
         ),
         DashboardKeyMetric(
           id: 'nextReview',
           label: 'Next Review',
-          value: '2h 15m',
+          value: reviewCandidates.isEmpty ? 'None scheduled' : reviewCandidates.first.dueLabel(now),
           tone: 'orange',
         ),
       ],
-      recommendedConcepts: const [
-        RecommendedConcept(
-          id: 'quadratic-equations',
-          courseId: 'mathematics-201',
-          category: 'Mathematics',
-          title: 'Quadratic Equations',
-          retentionNote: 'Retention predicted to drop in 24hrs',
-          actionLabel: 'Review Concept',
-          feedbackId: 'memory-types',
-          visualStyle: ConceptVisualStyle.mathematics,
-        ),
-        RecommendedConcept(
-          id: 'integration-by-parts',
-          courseId: 'calculus-101',
-          category: 'Calculus',
-          title: 'Integration by Parts',
-          retentionNote: 'Reinforce to build long-term mastery',
-          actionLabel: 'Deepen Understanding',
-          feedbackId: 'synaptic-plasticity',
-          visualStyle: ConceptVisualStyle.neuroscience,
-        ),
-      ],
-      quickCheck: const QuizPrompt(
-        id: 'factoring-trinomials',
-        tag: 'QUICK CHECK',
-        title: 'Algebra: Factoring Trinomials',
-        subtitle: '3 min quiz to stabilise recent learning.',
-        actionLabel: 'Start Quiz',
-      ),
-      progressStats: const [
+      recommendedConcepts: recommended,
+      quickCheck: quickCheck,
+      progressStats: [
         ProgressStat(
           id: 'modules',
-          label: 'Modules Completed',
-          value: '12/15',
+          label: 'Materials Tracked',
+          value: '${materials.length}',
           tone: 'blue',
         ),
         ProgressStat(
           id: 'studyTime',
           label: 'Study Time',
-          value: '42.5 hrs',
+          value: '${studyTimeHours.toStringAsFixed(1)} hrs',
           tone: 'green',
         ),
         ProgressStat(
           id: 'mastery',
-          label: 'Mastery Level',
-          value: 'Expert',
+          label: 'Overall Mastery',
+          value: '$overallMastery%',
           tone: 'purple',
         ),
       ],
-      overallMasteryPercent: 73,
-      problemsSolved: 156,
-      studyTimeHours: 23,
-      masteryProgressTrend: const [
-        RetentionPoint(label: 'Week 1', retentionPercent: 35),
-        RetentionPoint(label: 'Week 2', retentionPercent: 40),
-        RetentionPoint(label: 'Week 3', retentionPercent: 38),
-        RetentionPoint(label: 'Week 4', retentionPercent: 48),
-        RetentionPoint(label: 'Week 5', retentionPercent: 52),
-        RetentionPoint(label: 'Week 6', retentionPercent: 58),
-        RetentionPoint(label: 'Week 7', retentionPercent: 65),
-        RetentionPoint(label: 'Week 8', retentionPercent: 72),
-      ],
-      topicMastery: const [
-        TopicMastery(
-          topic: 'Linear Algebra',
-          masteryPercent: 85,
-          trend: 'Improving',
-        ),
-        TopicMastery(
-          topic: 'Calculus',
-          masteryPercent: 72,
-          trend: 'Improving',
-        ),
-        TopicMastery(
-          topic: 'Differential Eq.',
-          masteryPercent: 68,
-          trend: 'Stable',
-        ),
-        TopicMastery(
-          topic: 'Statistics',
-          masteryPercent: 55,
-          trend: 'Declining',
-        ),
-        TopicMastery(
-          topic: 'Integration',
-          masteryPercent: 45,
-          trend: 'Improving',
-        ),
-        TopicMastery(
-          topic: 'Matrix Theory',
-          masteryPercent: 38,
-          trend: 'Declining',
-        ),
-      ],
+      overallMasteryPercent: overallMastery,
+      problemsSolved: problemsSolved,
+      studyTimeHours: studyTimeHours,
+      masteryProgressTrend: trend,
+      topicMastery: topics,
     );
   }
 
@@ -166,342 +180,93 @@ class MockStudentLearningService implements StudentLearningService {
   Future<AiFeedbackData> getFeedbackForConcept({
     required String studentId,
     required String feedbackId,
-  }) async {
-    if (feedbackId == 'synaptic-plasticity') {
-      return _synapticPlasticity(studentId);
-    }
-
-    return _memoryTypes(studentId);
+  }) {
+    // Real per-session AI feedback is served by ExplainableAiFeedbackPage's
+    // own session browser (GET /user/<uid>/sessions + GET /session/<sid>),
+    // not by this generic single-concept lookup — there is no equivalent
+    // backend concept to fetch here, so callers should not reach this path
+    // for a student with real session history.
+    throw StateError('No AI feedback is available yet — complete a learning session first.');
   }
 
   @override
   Future<FeedbackReport> buildFeedbackReport({
     required String studentId,
     required String feedbackId,
-  }) async {
-    final feedback = await getFeedbackForConcept(
-      studentId: studentId,
-      feedbackId: feedbackId,
-    );
-
-    return FeedbackReport(
-      title: '${feedback.conceptTitle} AI Feedback Report',
-      generatedFor: feedback.studentId,
-      generatedAt: DateTime.now(),
-      rows: feedback.reportRows,
-    );
+  }) {
+    throw StateError('No AI feedback is available yet — complete a learning session first.');
   }
 
-  AiFeedbackData _memoryTypes(String studentId) {
-    final generatedAt = DateTime.now();
-
-    return AiFeedbackData(
-      id: 'memory-types',
-      studentId: studentId,
-      courseTitle: 'Algebra II',
-      conceptTitle: 'Quadratic Equations',
-      badgeLabel: 'AI INSIGHT',
-      headline: 'Why practice this now?',
-      summary:
-          'We have identified this exact moment as the optimal time to reinforce "Quadratic Equations" to prevent natural forgetting.',
-      currentRetentionPercent: 62,
-      declinePercent: 38,
-      recoveryRetentionPercent: 95,
-      retentionDescription:
-          'Predicted retention if no practice occurs within 24 hours.',
-      curve: const [
-        RetentionCurvePoint(
-          label: 'Day 1',
-          day: 1,
-          predictedRetention: 88,
-          idealRetention: 88,
-        ),
-        RetentionCurvePoint(
-          label: 'Day 3',
-          day: 3,
-          predictedRetention: 44,
-          idealRetention: 78,
-        ),
-        RetentionCurvePoint(
-          label: 'Today',
-          day: 7,
-          predictedRetention: 62,
-          idealRetention: 61,
-          isCurrent: true,
-        ),
-        RetentionCurvePoint(
-          label: 'Day 14',
-          day: 14,
-          predictedRetention: 58,
-          idealRetention: 40,
-        ),
-        RetentionCurvePoint(
-          label: 'Day 30',
-          day: 30,
-          predictedRetention: 53,
-          idealRetention: 15,
-        ),
-      ],
-      factors: const [
-        ExplanationFactor(
-          id: 'timeLapse',
-          title: 'Time Lapse',
-          value: '7 Days Ago',
-          description:
-              'It has been a week since your last practice. Memory decay accelerates at this difficulty level.',
-          tone: 'orange',
-        ),
-        ExplanationFactor(
-          id: 'complexity',
-          title: 'Concept Complexity',
-          value: 'High',
-          description:
-              '"Quadratic Equations" involves multiple solution methods (factoring, formula, completing the square) that need frequent reinforcement.',
-          tone: 'purple',
-        ),
-        ExplanationFactor(
-          id: 'pastPerformance',
-          title: 'Past Performance',
-          value: '85% Accuracy',
-          description:
-              'You did well last time, so this review locks in the success before details begin to fade.',
-          tone: 'green',
-        ),
-      ],
-      guidanceTitle: 'Forgetting is part of the process',
-      guidanceBody:
-          'Your retention is still recoverable with a short review session. NeuroMathix is recommending this concept because the predicted curve is approaching the point where relearning would take more effort than reinforcement.',
-      reportRows: const [
-        ReportMetricRow(
-          metric: 'Current retention',
-          value: '62%',
-          interpretation: 'Moderate recall strength with risk of decline.',
-          recommendation: 'Complete a focused review within 24 hours.',
-        ),
-        ReportMetricRow(
-          metric: 'Time since practice',
-          value: '7 days',
-          interpretation: 'The concept has crossed the optimal review window.',
-          recommendation: 'Schedule a short reinforcement session today.',
-        ),
-        ReportMetricRow(
-          metric: 'Concept complexity',
-          value: 'High',
-          interpretation:
-              'Multiple solution methods increase forgetting risk.',
-          recommendation:
-              'Use explanation-based questions across all solving methods.',
-        ),
-        ReportMetricRow(
-          metric: 'Past accuracy',
-          value: '85%',
-          interpretation:
-              'Previous mastery is strong enough to recover quickly.',
-          recommendation: 'Prioritise spaced practice over full relearning.',
-        ),
-      ],
-      generatedAt: generatedAt,
-    );
+  Future<int> _unreadNotificationCount(String studentId) async {
+    try {
+      final snapshot = await _firestore
+          .collection('notifications')
+          .where('userId', isEqualTo: studentId)
+          .where('isRead', isEqualTo: false)
+          .get();
+      return snapshot.docs.length;
+    } catch (_) {
+      return 0;
+    }
   }
 
-  AiFeedbackData _synapticPlasticity(String studentId) {
-    final generatedAt = DateTime.now();
-
-    return AiFeedbackData(
-      id: 'synaptic-plasticity',
-      studentId: studentId,
-      courseTitle: 'Calculus I',
-      conceptTitle: 'Integration by Parts',
-      badgeLabel: 'AI INSIGHT',
-      headline: 'Why deepen this now?',
-      summary:
-          'Your answers show strong recognition of the formula, but weaker transfer when integration by parts is applied to multi-step problems.',
-      currentRetentionPercent: 71,
-      declinePercent: 24,
-      recoveryRetentionPercent: 93,
-      retentionDescription:
-          'Predicted retention before the next practice window closes.',
-      curve: const [
-        RetentionCurvePoint(
-          label: 'Day 1',
-          day: 1,
-          predictedRetention: 92,
-          idealRetention: 92,
-        ),
-        RetentionCurvePoint(
-          label: 'Day 3',
-          day: 3,
-          predictedRetention: 76,
-          idealRetention: 84,
-        ),
-        RetentionCurvePoint(
-          label: 'Today',
-          day: 5,
-          predictedRetention: 71,
-          idealRetention: 70,
-          isCurrent: true,
-        ),
-        RetentionCurvePoint(
-          label: 'Day 14',
-          day: 14,
-          predictedRetention: 61,
-          idealRetention: 46,
-        ),
-        RetentionCurvePoint(
-          label: 'Day 30',
-          day: 30,
-          predictedRetention: 49,
-          idealRetention: 18,
-        ),
-      ],
-      factors: const [
-        ExplanationFactor(
-          id: 'transfer',
-          title: 'Transfer Strength',
-          value: 'Needs Practice',
-          description:
-              'Multi-step application problems took significantly longer than formula-recall questions.',
-          tone: 'orange',
-        ),
-        ExplanationFactor(
-          id: 'complexity',
-          title: 'Concept Complexity',
-          value: 'Medium-High',
-          description:
-              'The topic links product rules, u-substitution, and recursive integration patterns.',
-          tone: 'purple',
-        ),
-        ExplanationFactor(
-          id: 'pastPerformance',
-          title: 'Past Performance',
-          value: '78% Accuracy',
-          description:
-              'Accuracy is improving, but the model still detects gaps in applied multi-step reasoning.',
-          tone: 'green',
-        ),
-      ],
-      guidanceTitle: 'Reinforcement builds durable understanding',
-      guidanceBody:
-          'This recommendation is designed to move you from formula recognition to confident application. A short session with varied integration problems should strengthen both recall and transfer.',
-      reportRows: const [
-        ReportMetricRow(
-          metric: 'Current retention',
-          value: '71%',
-          interpretation: 'Good recall strength, but not yet stable.',
-          recommendation: 'Review with two applied multi-step problems today.',
-        ),
-        ReportMetricRow(
-          metric: 'Transfer strength',
-          value: 'Needs practice',
-          interpretation: 'Application problems reveal slower reasoning.',
-          recommendation:
-              'Use examples that require choosing between integration methods.',
-        ),
-        ReportMetricRow(
-          metric: 'Past accuracy',
-          value: '78%',
-          interpretation: 'Accuracy is improving but still inconsistent.',
-          recommendation: 'Keep hints available for the next session.',
-        ),
-      ],
-      generatedAt: generatedAt,
-    );
+  static String _deltaLabel(double diff) {
+    if (diff > 0.4) return '+${diff.round()}% vs last session';
+    if (diff < -0.4) return '${diff.round()}% vs last session';
+    return 'Steady vs last session';
   }
 }
 
-class FirestoreStudentLearningService implements StudentLearningService {
-  final FirebaseFirestore _firestore;
+class _ReviewCandidate {
+  final String materialId;
+  final String title;
+  final DateTime? nextReviewDate;
 
-  FirestoreStudentLearningService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+  _ReviewCandidate({
+    required this.materialId,
+    required this.title,
+    required this.nextReviewDate,
+  });
 
-  @override
-  Future<StudentDashboardData> getDashboard(String studentId) async {
-    final doc = await _firestore.collection('student_dashboards').doc(studentId).get();
-    
-    if (!doc.exists) {
-      // Fallback or empty state if doesn't exist to prevent full crashes initially.
-      return const MockStudentLearningService().getDashboard(studentId);
+  static _ReviewCandidate? fromMaterialJson(Map<String, dynamic> json) {
+    final materialId = json['material_id'] as String?;
+    if (materialId == null) return null;
+    final latest = json['latest_session'] as Map<String, dynamic>?;
+    DateTime? nextReview;
+    final raw = latest?['next_review_date'] as String?;
+    if (raw != null) {
+      try {
+        nextReview = DateTime.parse(raw);
+      } catch (_) {}
     }
-    
-    final data = doc.data()!;
-    return StudentDashboardData.fromJson(data);
-  }
-
-  @override
-  Future<AiFeedbackData> getFeedbackForConcept({
-    required String studentId,
-    required String feedbackId,
-  }) async {
-    final doc = await _firestore
-        .collection('ai_feedback')
-        .doc('${studentId}_$feedbackId')
-        .get();
-        
-    if (!doc.exists) {
-      // Fallback
-      return const MockStudentLearningService().getFeedbackForConcept(
-        studentId: studentId,
-        feedbackId: feedbackId,
-      );
-    }
-    
-    final data = doc.data()!;
-    // Ensure accurate timestamp parsing if coming back as Firestore Timestamp
-    if (data['generatedAt'] is Timestamp) {
-      data['generatedAt'] = (data['generatedAt'] as Timestamp).toDate().toIso8601String();
-    }
-    return AiFeedbackData.fromJson(data);
-  }
-
-  @override
-  Future<FeedbackReport> buildFeedbackReport({
-    required String studentId,
-    required String feedbackId,
-  }) async {
-    final feedback = await getFeedbackForConcept(
-      studentId: studentId,
-      feedbackId: feedbackId,
-    );
-
-    return FeedbackReport(
-      title: '${feedback.conceptTitle} AI Feedback Report',
-      generatedFor: feedback.studentId,
-      generatedAt: DateTime.now(),
-      rows: feedback.reportRows,
+    return _ReviewCandidate(
+      materialId: materialId,
+      title: (json['filename'] as String? ?? 'Untitled.pdf').replaceAll('.pdf', ''),
+      nextReviewDate: nextReview,
     );
   }
 
-  // --- Utility method to seed Firestore with the mock data (only on first run) ---
-  Future<void> seedMockData(String studentId) async {
-    // Check if dashboard already exists — don't overwrite real student data
-    final existing = await _firestore
-        .collection('student_dashboards')
-        .doc(studentId)
-        .get();
-    if (existing.exists) return;
+  /// Lower = more urgent. Overdue/soonest reviews sort first; materials with
+  /// no scheduled review yet (never studied) sort last.
+  double urgencyRank(DateTime now) {
+    if (nextReviewDate == null) return double.infinity;
+    return nextReviewDate!.difference(now).inMinutes.toDouble();
+  }
 
-    final mockService = const MockStudentLearningService();
-    
-    // Seed Dashboard
-    final dashboardData = await mockService.getDashboard(studentId);
-    await _firestore
-        .collection('student_dashboards')
-        .doc(studentId)
-        .set(dashboardData.toJson());
+  String retentionNote(DateTime now) {
+    if (nextReviewDate == null) return 'Start a session to build a review schedule.';
+    final days = nextReviewDate!.difference(now).inDays;
+    if (days < 0) return 'Review overdue — retention is dropping.';
+    if (days == 0) return 'Review due today.';
+    return 'Review due in $days day${days == 1 ? '' : 's'}.';
+  }
 
-    // Seed Feedbacks
-    final feedbackIds = ['synaptic-plasticity', 'memory-types'];
-    for (final fId in feedbackIds) {
-      final fbData = await mockService.getFeedbackForConcept(
-        studentId: studentId,
-        feedbackId: fId,
-      );
-      final jsonData = fbData.toJson();
-      await _firestore
-          .collection('ai_feedback')
-          .doc('${studentId}_$fId')
-          .set(jsonData);
-    }
+  String dueLabel(DateTime now) {
+    if (nextReviewDate == null) return 'Not scheduled';
+    final diff = nextReviewDate!.difference(now);
+    if (diff.isNegative) return 'Overdue';
+    if (diff.inHours < 1) return '${diff.inMinutes}m';
+    if (diff.inDays < 1) return '${diff.inHours}h';
+    return '${diff.inDays}d';
   }
 }

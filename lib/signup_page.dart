@@ -16,7 +16,6 @@ class _SignupPageState extends State<SignupPage> {
   final _nameCtrl  = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _passCtrl  = TextEditingController();
-  bool _isStudent  = true;
   bool _showPass   = false;
 
   @override
@@ -24,19 +23,18 @@ class _SignupPageState extends State<SignupPage> {
 
   Future<void> _createAccount() async {
     final provider = Provider.of<AppAuthProvider>(context, listen: false);
-    await provider.signUp(
+    final ok = await provider.signUpStudent(
       email: _emailCtrl.text.trim(),
       password: _passCtrl.text.trim(),
       displayName: _nameCtrl.text.trim(),
-      role: _isStudent ? 'student' : 'teacher',
     );
     if (!mounted) return;
-    if (provider.errorMessage != null) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(provider.errorMessage!)));
+    if (!ok || provider.errorMessage != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(provider.errorMessage ?? 'Signup failed')));
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Account created')));
-      Navigator.pushNamedAndRemoveUntil(context, '/dashboard', (_) => false);
+          const SnackBar(content: Text('Account created — check your email to verify it.')));
+      Navigator.pushNamedAndRemoveUntil(context, '/verify-email', (_) => false);
     }
   }
 
@@ -98,14 +96,17 @@ class _SignupPageState extends State<SignupPage> {
                   const SizedBox(height: 6),
                   Text('Join thousands of learners improving with AI',
                       style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 14)),
-                  const SizedBox(height: 24),
-                  // Student / Teacher toggle
-                  Container(height: 44,
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                     decoration: BoxDecoration(color: AppColors.bgPage,
-                        borderRadius: BorderRadius.circular(30)),
+                        borderRadius: BorderRadius.circular(12)),
                     child: Row(children: [
-                      _roleTab('Student', _isStudent, () => setState(() => _isStudent = true)),
-                      _roleTab('Teacher', !_isStudent, () => setState(() => _isStudent = false)),
+                      Icon(Icons.school_outlined, size: 18, color: AppColors.textMuted),
+                      const SizedBox(width: 10),
+                      Expanded(child: Text(
+                        'Signing up here creates a student account. Teacher accounts are set up by an administrator.',
+                        style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 12.5))),
                     ])),
                   const SizedBox(height: 20),
                   _label('Full name'), const SizedBox(height: 6),
@@ -151,18 +152,6 @@ class _SignupPageState extends State<SignupPage> {
         ]),
       ]));
   }
-
-  Widget _roleTab(String label, bool active, VoidCallback onTap) => Expanded(
-    child: GestureDetector(onTap: onTap,
-      child: AnimatedContainer(duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.all(4),
-        decoration: BoxDecoration(
-          color: active ? AppColors.accent : Colors.transparent,
-          borderRadius: BorderRadius.circular(26)),
-        alignment: Alignment.center,
-        child: Text(label, style: GoogleFonts.dmSans(
-          color: active ? Colors.white : AppColors.textMuted,
-          fontWeight: FontWeight.w600, fontSize: 14)))));
 
   Widget _label(String t) => Text(t,
     style: GoogleFonts.dmSans(color: AppColors.textDark, fontWeight: FontWeight.w500, fontSize: 14));

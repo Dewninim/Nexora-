@@ -1,5 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/material.dart';
+
 import '../auth_service.dart';
 
 class AppAuthProvider extends ChangeNotifier {
@@ -9,93 +10,107 @@ class AppAuthProvider extends ChangeNotifier {
   String? errorMessage;
 
   User? get user => FirebaseAuth.instance.currentUser;
-
   Stream<User?> get userStream => _auth.userStream;
 
-  // LOGIN
-  Future<void> login(String email, String password) async {
-    try {
-      isLoading = true;
-      errorMessage = null;
-      notifyListeners();
-
-      await _auth.login(email, password);
-    } on FirebaseAuthException catch (e) {
-      errorMessage = getFirebaseErrorMessage(e);
-    } catch (e) {
-      errorMessage = 'Login failed';
-    } finally {
-      isLoading = false;
-      notifyListeners();
-    }
+  Future<bool> login(String email, String password) async {
+    return _run(() => _auth.login(email, password));
   }
 
-  // SIGNUP — now accepts displayName and role
-  Future<void> signUp({
+  // Public sign-up always creates a student account — teacher accounts are
+  // provisioned separately via admin_tools/create_teacher.py.
+  Future<bool> signUpStudent({
     required String email,
     required String password,
     required String displayName,
-    required String role,
   }) async {
-    try {
-      isLoading = true;
-      errorMessage = null;
-      notifyListeners();
-
-      await _auth.signUp(
+    return _run(
+      () => _auth.signUpStudent(
         email: email,
         password: password,
         displayName: displayName,
-        role: role,
-      );
-    } on FirebaseAuthException catch (e) {
-      errorMessage = getFirebaseErrorMessage(e);
-    } catch (e) {
-      errorMessage = 'Signup failed';
+      ),
+    );
+  }
+
+  Future<bool> sendPasswordReset(String email) async {
+    return _run(() => _auth.sendPasswordReset(email));
+  }
+
+  Future<bool> resendVerificationEmail() async {
+    return _run(_auth.resendVerificationEmail);
+  }
+
+  Future<bool> refreshEmailVerification() async {
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
+    try {
+      return await _auth.refreshEmailVerification();
+    } on FirebaseAuthException catch (error) {
+      errorMessage = getFirebaseErrorMessage(error);
+      return false;
+    } on AuthFlowException catch (error) {
+      errorMessage = error.message;
+      return false;
+    } catch (_) {
+      errorMessage = 'Could not refresh verification status.';
+      return false;
     } finally {
       isLoading = false;
       notifyListeners();
     }
   }
 
-  // LOGOUT
   Future<void> logout() async {
     await _auth.logout();
   }
 
+  Future<bool> _run(Future<void> Function() action) async {
+    try {
+      isLoading = true;
+      errorMessage = null;
+      notifyListeners();
+      await action();
+      return true;
+    } on FirebaseAuthException catch (error) {
+      errorMessage = getFirebaseErrorMessage(error);
+      return false;
+    } on AuthFlowException catch (error) {
+      errorMessage = error.message;
+      return false;
+    } catch (error) {
+      errorMessage = error.toString().replaceFirst('Exception: ', '');
+      return false;
+    } finally {
+      isLoading = false;
+      notifyListeners();
+    }
+  }
+
   // Firebase Auth SDK v10+ consolidates some codes into 'invalid-credential'.
   // Keep legacy codes as fallbacks for older SDK versions.
-  String getFirebaseErrorMessage(FirebaseAuthException e) {
-    switch (e.code) {
-      // ── Login errors ──────────────────────────────────────────────────────
+  String getFirebaseErrorMessage(FirebaseAuthException error) {
+    switch (error.code) {
       case 'invalid-credential':
-        // SDK v10+ replaces user-not-found + wrong-password with this single code
-        return 'Invalid email or password.';
       case 'user-not-found':
-        return 'No account found with this email.';
       case 'wrong-password':
-        return 'Incorrect password. Try again.';
+        return 'Invalid email or password.';
       case 'user-disabled':
         return 'This account has been disabled.';
       case 'too-many-requests':
-        return 'Too many attempts. Please wait a moment and try again.';
-
-      // ── Signup errors ─────────────────────────────────────────────────────
+        return 'Too many attempts. Please wait and try again.';
       case 'email-already-in-use':
-        return 'This email is already registered.';
+        return 'This email address is already registered.';
       case 'weak-password':
-        return 'Password must be at least 6 characters.';
-
-      // ── Shared ────────────────────────────────────────────────────────────
+        return 'Use a stronger password with at least 8 characters.';
       case 'invalid-email':
         return 'Enter a valid email address.';
       case 'network-request-failed':
         return 'Check your internet connection.';
       case 'operation-not-allowed':
-        return 'Email/password sign-in is not enabled. Contact support.';
-
+        return 'Email/password authentication is not enabled.';
       default:
-        return 'Something went wrong. Please try again.';
+        return error.message ?? 'Authentication failed. Please try again.';
     }
   }
 }

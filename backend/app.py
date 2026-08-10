@@ -6,7 +6,11 @@ Model 2 : Prompt-engineered adaptive question generator (Gemini 1.5 Flash)
           - prioritises chunks using Model 1's per-chunk difficulty + weak topics
           - progressive 10-level contextual hints (generated on request)
           - per-question timing, timeout/overtime tracking
-XAI     : Full step-by-step explanation per answer (all formats)
+XAI     : Full step-by-step explanation per answer (all formats) via Gemini —
+          free-text grading isn't a fixed-feature classifier, so SHAP does
+          not apply there. Model 1's difficulty score IS a real classifier
+          (RandomForest over TF-IDF features), so THAT prediction gets real
+          SHAP (TreeExplainer) feature-attribution explanations below.
 Curve   : Ebbinghaus R(t)=e^(-t/S) forgetting curve, paced by study mode
 """
 import os,json,uuid,math,pickle,re,logging,random
@@ -139,6 +143,64 @@ try:
 except Exception as e:
     log.warning("[WARN] Model 1 not found: %s",e)
 
+# Real SHAP explainability for Model 1's difficulty classifier — TreeExplainer
+# is exact (no sampling) for tree ensembles and needs no background dataset,
+# so it's built once here and reused for every chunk instead of per-call.
+MODEL1_SHAP_EXPLAINER=None
+try:
+    import shap as _shap
+    if MODEL1_RF is not None:
+        MODEL1_SHAP_EXPLAINER=_shap.TreeExplainer(MODEL1_RF)
+        log.info("[OK] SHAP TreeExplainer ready for Model 1")
+except Exception as e:
+    log.warning("[WARN] SHAP unavailable — difficulty predictions will skip feature-attribution explanations: %s",e)
+
+# Small standard English stopword list — filters function words (the, of,
+# how, ...) out of SHAP's top features so what's surfaced is actual
+# math/content vocabulary, not grammar. Not model output, just a fixed
+# linguistic list (same role nltk.corpus.stopwords would play).
+_STOPWORDS={"the","a","an","of","in","on","at","to","for","and","or","but","is","are","was",
+    "were","be","been","being","this","that","these","those","it","its","as","by","with",
+    "from","we","you","your","our","their","his","her","he","she","they","i","if","then",
+    "than","so","not","no","do","does","did","can","could","should","would","will","shall",
+    "may","might","must","have","has","had","which","what","who","whom","how","when","where",
+    "why","each","every","any","some","all","both","either","neither","such","also","just",
+    "up","down","out","over","under","again","further","once","here","there","one","two",
+    "into","about","above","below","between","after","before"}
+
+def explain_difficulty(text,predicted_class,top_n=5):
+    """Real SHAP feature-attribution explanation for a Model 1 difficulty
+    prediction — which words in THIS chunk pushed the RandomForest toward
+    the class it actually predicted. Returns [] if SHAP or Model 1 aren't
+    available (heuristic-fallback predictions have no such explanation to
+    give, since there's no model to attribute)."""
+    if MODEL1_SHAP_EXPLAINER is None or MODEL1_VEC is None or MODEL1_RF is None:
+        return []
+    try:
+        X=MODEL1_VEC.transform([text]).toarray().astype("float64")
+        sv=MODEL1_SHAP_EXPLAINER.shap_values(X,check_additivity=False)
+        class_idx=list(MODEL1_RF.classes_).index(predicted_class)
+        # shap>=0.45 returns shape (n_samples, n_features, n_classes) for
+        # multiclass tree models; older versions return a list of per-class
+        # arrays instead — handle both so a shap version bump doesn't break this.
+        if isinstance(sv,list):
+            values=sv[class_idx][0]
+        else:
+            values=sv[0,:,class_idx]
+        names=MODEL1_VEC.get_feature_names_out()
+        ranked=sorted(range(len(values)),key=lambda i:-abs(values[i]))
+        out=[]
+        for i in ranked:
+            word=names[i]
+            if values[i]==0 or word in _STOPWORDS or word.isdigit():continue
+            out.append({"word":word,"contribution":round(float(values[i]),4),
+                "direction":"increases" if values[i]>0 else "decreases"})
+            if len(out)>=top_n:break
+        return out
+    except Exception as e:
+        log.warning("[explain_difficulty] SHAP failed: %s",e)
+        return []
+
 DLVL={1:"very_easy",2:"easy",3:"medium",4:"hard",5:"very_hard"}
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -230,6 +292,19 @@ def extract_chunks(pdf_bytes,wpc=300,max_chunks=40):
     if ocr_attempts:
         log.info("[extract_chunks] OCR attempted on %d pages, recovered text from %d of them%s",
             ocr_attempts,ocr_used_on," (hit the %d-page OCR cap — some later scanned pages were skipped for speed)"%MAX_OCR_PAGES if ocr_attempts>=MAX_OCR_PAGES else "")
+
+    # Drop whole TOC/index/front-matter PAGES before merging into 300-word
+    # chunks — checking density on the final merged chunk (below) misses a
+    # short Contents page once it's diluted by surrounding real content in
+    # the same window. A standalone page is small enough that its own
+    # marker density stays high and gets caught here instead.
+    dropped_pages=0
+    for i,pt in enumerate(page_texts):
+        if pt.strip() and (_is_toc_like(pt) or _is_frontmatter_like(pt)):
+            page_texts[i]="";dropped_pages+=1
+    if dropped_pages:
+        log.info("[extract_chunks] dropped %d whole page(s) as TOC/index/front-matter before chunking",dropped_pages)
+
     text=" ".join(page_texts)
     words=text.split();out=[];dropped_toc=0;dropped_frontmatter=0
     for i in range(0,len(words),wpc):
@@ -320,17 +395,31 @@ def _is_toc_like(text):
     markers+=len(re.findall(r"Answers to",text,re.IGNORECASE))
     markers+=len(re.findall(r"\b\d+\.\d+\b",text))          # section numbers: 9.1, 9.2, ...
     markers+=len(re.findall(r"\(\d+\s*pages?\)",text,re.IGNORECASE))  # "(9 pages)"
+    # OCR-mangled dotted-leader TOC lines lose the spaces/dots between a
+    # chapter title and its page number — "Area under a curve .... 149"
+    # becomes "Areaundercurve149". A lowercase word glued directly to a
+    # trailing page number like that essentially never happens in real
+    # prose, so weight it heavily — this is what actually catches a TOC
+    # page whose OCR quality was too poor for the marker patterns above.
+    markers+=len(re.findall(r"\b[a-z]{5,}\d{1,3}\b",text))*3
     word_count=max(len(text.split()),1)
     density=markers/word_count
     return density>0.10   # tuned threshold — TOC pages score far above this
 
-def predict_difficulty(text):
+def predict_difficulty(text,explain=False):
+    """explain=True additionally runs real SHAP attribution for this
+    prediction (see explain_difficulty()) — off by default since it's a
+    real per-call cost (~0.1-1s), so callers processing many chunks should
+    only request it for a bounded subset."""
     if MODEL1_RF and MODEL1_VEC:
         try:
             X=MODEL1_VEC.transform([text])
             score=int(MODEL1_RF.predict(X)[0])
             proba=MODEL1_RF.predict_proba(X)[0].tolist()
-            return{"score":score,"level":DLVL.get(score,"medium"),"confidence":round(float(max(proba)),3),"source":"model1_rf"}
+            out={"score":score,"level":DLVL.get(score,"medium"),"confidence":round(float(max(proba)),3),"source":"model1_rf"}
+            if explain:
+                out["shap_top_features"]=explain_difficulty(text,score)
+            return out
         except Exception as e:log.warning("M1 err:%s",e)
     words=text.split();avg=sum(len(w) for w in words)/max(len(words),1)
     s=min(5,max(1,round(avg-1)))
@@ -492,6 +581,12 @@ early undergraduate) and keep every generated question consistent with that
 same inferred level — don't drift into harder or easier territory than the
 source material itself demonstrates.
 
+FORMATTING: this app renders PLAIN TEXT, not LaTeX. Never wrap any
+expression in $ or $$ delimiters. Write exponents as x^2 (caret notation)
+or, better, as actual Unicode superscript characters (x²) — never $x^2$.
+Write fractions as "a/b" or "(a)/(b)", never \frac{{a}}{{b}}. Use ×, ÷, √,
+π directly rather than \times, \div, \sqrt, \pi.
+
 ══════════════════════════════════════════════════════════════════════════════
 4. QUESTION GENERATION — exact counts, formats, and cognitive levels
 ══════════════════════════════════════════════════════════════════════════════
@@ -547,7 +642,9 @@ Guidance by level:
 
 Write 2-4 SHORT sentences (under 60 words total). Finish your last sentence
 completely — a hint that trails off unfinished is worse than a shorter
-complete one. Return ONLY the hint text — no JSON, no preamble, no markdown."""
+complete one. This app renders plain text, not LaTeX — never use $ or $$
+delimiters; write exponents as x^2 or x² and fractions as a/b, never
+\\frac{{a}}{{b}}. Return ONLY the hint text — no JSON, no preamble, no markdown."""
 
 def build_xai_prompt_v2(q,answer_summary,is_correct,time_taken,time_allotted,hints_used):
     fmt=q.get("format","fill_blank")
@@ -567,6 +664,9 @@ Write feedback (200-260 words):
 3. One memory trick or conceptual anchor.
 4. One brief comment on their time usage and hint usage.
 5. A short encouraging close.
+
+FORMATTING: plain text only, not LaTeX — never use $ or $$ delimiters;
+write exponents as x^2 or x² and fractions as a/b, never \frac{{a}}{{b}}.
 
 Return ONLY: {{"xai_text":"...","confidence_boost":0.1-1.0,"review_topics":["t1"]}}"""
 
@@ -675,6 +775,49 @@ def _escape_literal_newlines_in_strings(raw):
         out.append(ch)
     return "".join(out)
 
+_SUPERSCRIPT_MAP=str.maketrans("0123456789","⁰¹²³⁴⁵⁶⁷⁸⁹")
+
+def _clean_math_notation(text):
+    """Gemini is trained on LaTeX-heavy math corpora and will often wrap
+    expressions in $...$/$$...$$ delimiters and write exponents as x^2 —
+    both correct LaTeX conventions, but this app renders plain text, not
+    LaTeX, so a stray '$' just shows up as a literal dollar sign in the UI.
+    This is a backend safety net applied to every piece of text a student
+    sees (questions, hints, XAI) regardless of whether the prompt's
+    formatting instruction was followed — it can't be, since Gemini
+    doesn't always obey formatting instructions perfectly."""
+    if not text or not isinstance(text,str):return text
+    # Strip LaTeX dollar-sign delimiters, keeping the inner content.
+    text=re.sub(r"\$\$(.+?)\$\$",r"\1",text)
+    text=re.sub(r"\$(.+?)\$",r"\1",text)
+    # Common LaTeX commands that sometimes slip through anyway.
+    text=text.replace("\\times","×").replace("\\cdot","·")
+    text=text.replace("\\pi","π").replace("\\infty","∞").replace("\\pm","±")
+    text=re.sub(r"\\frac\{([^{}]+)\}\{([^{}]+)\}",r"(\1)/(\2)",text)
+    text=re.sub(r"\\sqrt\{([^{}]+)\}",r"√(\1)",text)
+    text=re.sub(r"\\sqrt\[(\d+)\]\{([^{}]+)\}",r"\\2^(1/\1)",text)
+    # Simple caret exponents -> Unicode superscript for readability:
+    # "2^2" -> "2²", "x^3" -> "x³", "(a+b)^2" -> "(a+b)²". Complex exponents
+    # like x^(n+1) are left alone — no clean superscript form for those.
+    def _sup(m):
+        exp=m.group(2)
+        if len(exp)<=3 and exp.isdigit():
+            return m.group(1)+exp.translate(_SUPERSCRIPT_MAP)
+        return m.group(0)
+    text=re.sub(r"(\w|\))\^(\d{1,3})",_sup,text)
+    return text
+
+def _clean_question_text_fields(q):
+    """Applies _clean_math_notation to every user-visible text field on a
+    single question dict, in place."""
+    if q.get("question_text"):q["question_text"]=_clean_math_notation(q["question_text"])
+    if q.get("hint"):q["hint"]=_clean_math_notation(q["hint"])
+    if q.get("xai_explanation"):q["xai_explanation"]=_clean_math_notation(q["xai_explanation"])
+    if q.get("selection_rationale"):q["selection_rationale"]=_clean_math_notation(q["selection_rationale"])
+    for sp in q.get("sub_parts",[]) or []:
+        if sp.get("prompt"):sp["prompt"]=_clean_math_notation(sp["prompt"])
+    return q
+
 def parse_json_response(raw):
     raw = raw.strip()
     if "```" in raw:
@@ -723,25 +866,48 @@ def _make_blank(sent):
     if not cands:return None
     ci,cw=random.choice(cands[-max(1,len(cands)//2):])
     clean=cw.rstrip('.,;:')
-    blanked=" ".join("_____" if i==ci else w for i,w in enumerate(words))+"?"
+    blanked=" ".join("_____" if i==ci else w for i,w in enumerate(words)).strip()
+    # The source sentence often already ends in ./?/!/a closing quote (real
+    # textbook prose, or a practice question that was already phrased as a
+    # question) — blindly appending "?" produced visible artifacts like
+    # "...is the sum of 127 and 59 ??" (doubled) or "...and b\".?" (a
+    # trailing quote immediately followed by a stray period-question mark).
+    if blanked and blanked[-1] not in '.?!"\'':
+        blanked+="?"
     return blanked,clean
 
-def _distractors(correct,level):
+# Real, generic distractor words for prose fill-blank questions when the
+# correct word isn't in DISTRACTOR_POOL. This used to fabricate fake words
+# by truncating the correct answer and appending a random suffix (e.g.
+# "difference" -> "differetion"/"differeness"/"differeence") — grammatically
+# broken pseudo-words presented as real multiple-choice options. Every
+# candidate here is either a real word pulled from elsewhere in the same
+# passage, or a real word from a small generic maths-vocabulary bank.
+_GENERIC_DISTRACTOR_BANK=["sum","product","quotient","ratio","factor","multiple",
+    "remainder","coefficient","variable","constant","expression","equation",
+    "function","interval","sequence","gradient","tangent","integer","fraction",
+    "decimal","percentage","average","outcome","denominator","numerator"]
+
+def _distractors(correct,level,chunk_text=None):
     for grp in DISTRACTOR_POOL:
         if correct.lower() in [g.lower() for g in grp]:
             return [g for g in grp if g.lower()!=correct.lower()][:3]
-    base=correct[:max(4,len(correct)-3)]
-    sfx=["tion","ism","ity","ance","ment","ness","ence"]
     d=[]
-    for s in random.sample(sfx,min(4,len(sfx))):
-        w=base+s
-        if w!=correct and w not in d:d.append(w)
-        if len(d)==3:break
-    pad=["framework","paradigm","mechanism","principle","coefficient","derivative","variable"]
-    random.shuffle(pad)
-    for g in pad:
-        if len(d)>=3:break
-        if g!=correct:d.append(g)
+    seen={correct.lower()}
+    if chunk_text:
+        candidates=[w for w in re.findall(r"[A-Za-z]{6,}",chunk_text) if w.lower() not in seen]
+        random.shuffle(candidates)
+        for w in candidates:
+            wl=w.lower()
+            if wl in seen:continue
+            seen.add(wl);d.append(w)
+            if len(d)==3:break
+    if len(d)<3:
+        pool=[w for w in _GENERIC_DISTRACTOR_BANK if w.lower() not in seen]
+        random.shuffle(pool)
+        for w in pool:
+            if len(d)==3:break
+            d.append(w);seen.add(w.lower())
     return d[:3]
 
 def _fallback_qa_pair(chunk):
@@ -877,7 +1043,7 @@ def _build_fill_blank_question(chunk,nd,nl,qid):
     replacement question tied to one specific chunk, instead of duplicating
     this logic in two places."""
     qtxt,answer,is_computed=_fallback_computation_pair(chunk)
-    dists=_numeric_distractors(answer) if is_computed else _distractors(answer,nl)
+    dists=_numeric_distractors(answer) if is_computed else _distractors(answer,nl,chunk["text"])
     opts=[answer]+dists;random.shuffle(opts);cidx=opts.index(answer)
     topic=_topic_of(chunk)
     if is_computed:
@@ -1268,7 +1434,8 @@ def health():
     return jsonify({"status":"ok","model1_loaded":MODEL1_RF is not None,
         "gemini_status":"working" if GEMINI_WORKS else "fallback" if GEMINI_WORKS is False else "untested",
         "model1_classes":MODEL1_RF.classes_.tolist() if MODEL1_RF else[],
-        "mongo_connected":_sessions_col is not None and _materials_col is not None})
+        "mongo_connected":_sessions_col is not None and _materials_col is not None,
+        "shap_available":MODEL1_SHAP_EXPLAINER is not None})
 
 @app.route("/upload",methods=["POST"])
 def upload():
@@ -1297,11 +1464,29 @@ def upload():
     mid=str(uuid.uuid4())
     summary={lvl:sum(1 for c in chunks if c["difficulty"]["level"]==lvl) for lvl in["very_easy","easy","medium","hard","very_hard"]}
     summary["avg_score"]=round(sum(c["difficulty"]["score"] for c in chunks)/len(chunks),2)
+
+    # Real SHAP attribution — only for the hardest few chunks (the ones
+    # actually worth explaining "why is this hard"), since TreeExplainer is
+    # a genuine per-call cost (~0.1-1s) and running it on all 40 possible
+    # chunks would meaningfully slow every upload down.
+    SHAP_EXPLAIN_MAX_CHUNKS=6
+    hardest=sorted(chunks,key=lambda c:-c["difficulty"]["score"])[:SHAP_EXPLAIN_MAX_CHUNKS]
+    word_totals={}
+    for c in hardest:
+        feats=explain_difficulty(c["text"],c["difficulty"]["score"])
+        c["difficulty"]["shap_top_features"]=feats
+        for f in feats:
+            word_totals[f["word"]]=word_totals.get(f["word"],0.0)+f["contribution"]
+    ranked_words=sorted(word_totals.items(),key=lambda kv:-abs(kv[1]))[:8]
+    summary["difficulty_explanation"]=[
+        {"word":w,"contribution":round(v,4),"direction":"increases" if v>0 else "decreases"}
+        for w,v in ranked_words]
+
     _material_save(mid,{"id":mid,"user_id":user_id,"filename":filename,"uploaded_at":datetime.utcnow().isoformat(),
         "chunks":chunks,"study_days":sd,"mode":mode,"difficulty_summary":summary,
         "chunk_coverage":{str(c["index"]):0 for c in chunks},"session_count":0})
-    log.info("[upload] material_id=%s user=%s chunks=%d avg=%.1f is_math=%s conf=%.2f",
-        mid,user_id,len(chunks),summary["avg_score"],is_math,math_confidence)
+    log.info("[upload] material_id=%s user=%s chunks=%d avg=%.1f is_math=%s conf=%.2f shap_words=%d",
+        mid,user_id,len(chunks),summary["avg_score"],is_math,math_confidence,len(summary["difficulty_explanation"]))
     return jsonify({"material_id":mid,"filename":filename,"total_chunks":len(chunks),"difficulty_summary":summary,
         "is_math":True,"math_confidence":math_confidence})
 
@@ -1479,7 +1664,17 @@ def start_session(mid):
     if GEMINI_WORKS is not False:
         try:
             prioritised=ordered_chunks[:max(total_q,len(ordered_chunks))]
-            raw=call_gemini(build_model2_system_prompt(profile,easy_n,med_n,hard_n),build_question_user_prompt(prioritised),max_tokens=16000)
+            # Same fix as _xai_token_budget: a flat 16000-token cap was too
+            # tight for ~14-15 questions worth of rich JSON (rationale,
+            # hint, xai_explanation per question) once gemini-3.6-flash's
+            # internal "thinking" tokens are accounted for — confirmed in
+            # production logs ("Unterminated string...") truncating
+            # mid-JSON and silently dropping to the offline fallback
+            # generator, which is what produced garbled/nonsense questions
+            # on scanned material. Model's real ceiling is 65536 (queried
+            # from the API), so there's room for a generous budget.
+            question_tok=min(60000,1400*total_q+6000)
+            raw=call_gemini(build_model2_system_prompt(profile,easy_n,med_n,hard_n),build_question_user_prompt(prioritised),max_tokens=question_tok)
             data=parse_json_response(raw);questions=data.get("questions",[])
             for i,q in enumerate(questions):q["id"]=f"q{i+1}"
             used_gemini=True;log.info("[start] Gemini: %d Qs (easy=%d med=%d hard=%d)",len(questions),easy_n,med_n,hard_n)
@@ -1499,6 +1694,7 @@ def start_session(mid):
     #    output onto each question so it's independently checkable ──
     nd,nl=_next_difficulty(profile)
     relevance_check=verify_and_repair_grounding(questions,chunks,nd,nl,used_gemini)
+    for q in questions:_clean_question_text_fields(q)
 
     # ── update per-chunk coverage on the MATERIAL (not the session) so it
     #    persists across every session on this document ──
@@ -1536,12 +1732,17 @@ def get_hint(sid,qid):
     hint_text=None
     if GEMINI_WORKS is not False:
         try:
+            # 600 could leave near-zero room for the actual hint once
+            # gemini-3.6-flash's internal "thinking" tokens are subtracted
+            # from the same budget (see _xai_token_budget for the full
+            # explanation) — 2000 keeps this cheap while giving real headroom.
             hint_text=call_gemini("You are a maths tutor giving one short progressive hint.",
-                build_hint_prompt(q,level,current_answer),max_tokens=600).strip()
+                build_hint_prompt(q,level,current_answer),max_tokens=2000).strip()
         except Exception as e:
             log.warning("[hint] Gemini failed, using fallback: %s",e)
     if not hint_text:
         hint_text=generate_fallback_hint(q,level,current_answer)
+    hint_text=_clean_math_notation(hint_text)
 
     return jsonify({"question_id":qid,"hint_level":level,"hint_text":hint_text,"hints_remaining":MAX_HINT_LEVEL-level})
 
@@ -1568,33 +1769,67 @@ ONE student's just-completed session. For EACH question, write feedback (150-220
 4. One brief comment on time/hint usage.
 5. A short encouraging close.
 
+FORMATTING: plain text only, not LaTeX — never use $ or $$ delimiters;
+write exponents as x^2 or x² and fractions as a/b, never \frac{{a}}{{b}}.
+
 {joined}
 
 Return ONLY this JSON object, one entry per question, in the same order:
 {{"feedback":[{{"question_id":"{items[0]['qid'] if items else 'q1'}","xai_text":"...","confidence_boost":0.1-1.0,"review_topics":["t1"]}}]}}"""
 
+def _xai_token_budget(n_items):
+    # gemini-3.6-flash spends real, variable tokens on internal "thinking"
+    # BEFORE writing the visible JSON answer (confirmed via usageMetadata —
+    # a 14-item batch used ~2200 thinking tokens on top of the visible
+    # output). The old 700/item + 800 budget left too little headroom: on a
+    # long/detailed real prompt, thinking alone could consume the entire
+    # cap, leaving ZERO characters for the actual answer — an empty string
+    # that fails to parse as JSON (confirmed in production logs: "Expecting
+    # value: line 1 column 1"). The model's real ceiling is 65536 output
+    # tokens (queried from the API), so there's ample room for a generous
+    # fixed thinking buffer instead of guessing at a thinkingConfig field
+    # this model rejects outright (tested: thinkingBudget=0 -> HTTP 400).
+    return min(60000,1200*n_items+6000)
+
+def _call_batch_xai_once(items):
+    """One batch Gemini call for exactly these items. Raises on any
+    failure (network, HTTP, empty/unparseable response) — callers decide
+    how to retry or fall back."""
+    raw=call_gemini("You are an XAI tutor. Be precise and encouraging.",
+        build_batch_xai_prompt(items),max_tokens=_xai_token_budget(len(items)))
+    parsed=parse_json_response(raw)
+    out={}
+    for f in parsed.get("feedback",[]):
+        qid=f.get("question_id")
+        if qid:out[qid]={"xai_text":f.get("xai_text",""),
+            "confidence_boost":f.get("confidence_boost",0.5),
+            "review_topics":f.get("review_topics",[])}
+    return out
+
 def generate_batch_xai(items):
     """Returns {question_id: {xai_text,...}} for as many items as Gemini
-    successfully covers in ONE call. Any question missing from the result
-    (whole call failed, or Gemini dropped an item) falls back individually
-    via generate_xai_fallback at the call site — never blocks the submit."""
+    successfully covers. Tries ONE call for everything first; if that
+    fails (often a token-budget/truncation issue on large sessions — see
+    _xai_token_budget), retries by SPLITTING into two smaller batches,
+    which need much less budget each and are far less likely to truncate.
+    Only items still missing after that fall back individually via
+    generate_xai_fallback at the call site — never blocks the submit."""
     if not items or GEMINI_WORKS is False:
         return {}
     try:
-        max_tok=min(16000,700*len(items)+800)
-        raw=call_gemini("You are an XAI tutor. Be precise and encouraging.",
-            build_batch_xai_prompt(items),max_tokens=max_tok)
-        parsed=parse_json_response(raw)
-        out={}
-        for f in parsed.get("feedback",[]):
-            qid=f.get("question_id")
-            if qid:out[qid]={"xai_text":f.get("xai_text",""),
-                "confidence_boost":f.get("confidence_boost",0.5),
-                "review_topics":f.get("review_topics",[])}
-        return out
+        return _call_batch_xai_once(items)
     except Exception as e:
-        log.warning("[xai] batch Gemini call failed for %d questions, all fall back individually: %s",len(items),e)
+        log.warning("[xai] full batch (%d questions) failed, retrying as two smaller batches: %s",len(items),e)
+    if len(items)<2:
         return {}
+    mid=len(items)//2
+    out={}
+    for half in (items[:mid],items[mid:]):
+        try:
+            out.update(_call_batch_xai_once(half))
+        except Exception as e:
+            log.warning("[xai] split batch (%d questions) also failed, those fall back individually: %s",len(half),e)
+    return out
 
 @app.route("/session/<sid>/submit",methods=["POST"])
 def submit_answers(sid):
@@ -1629,6 +1864,7 @@ def submit_answers(sid):
         qid=g["qid"];q=g["q"];fmt=g["fmt"]
         xai=batch_xai.get(qid)
         if not xai:xai=generate_xai_fallback(q,g["is_correct"],g["answer_summary"])
+        if xai.get("xai_text"):xai["xai_text"]=_clean_math_notation(xai["xai_text"])
 
         # ── the correct answer, revealed only now that the question is
         #    graded — the frontend results/XAI screen needs this to show

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
@@ -63,6 +64,29 @@ class UploadState {
 class UploadProvider extends ChangeNotifier {
   UploadState _state = const UploadState();
   UploadState get state => _state;
+  Timer? _progressTicker;
+
+  // Real backend calls here take 10s-260s (OCR + Model 1, then Gemini
+  // question generation) with no byte-level progress to report — the old
+  // code just set a fixed number (0.15 -> 0.55 -> 1.0) and left it parked
+  // there for the entire duration of each call, which reads as "stuck" to
+  // anyone watching the number not move for a minute+. This instead creeps
+  // the value toward a ceiling on a timer while a call is in flight —
+  // visibly alive the whole time, and it never overshoots past the ceiling
+  // until the real response actually arrives.
+  void _creepToward(double ceiling) {
+    _progressTicker?.cancel();
+    _progressTicker = Timer.periodic(const Duration(milliseconds: 500), (_) {
+      final next = _state.progress + (ceiling - _state.progress) * 0.12;
+      _state = _state.copyWith(progress: next);
+      notifyListeners();
+    });
+  }
+
+  void _stopCreep() {
+    _progressTicker?.cancel();
+    _progressTicker = null;
+  }
 
   /// Uploads the picked file's raw bytes to the backend.
   /// [sizeMB] is only used for the client-side size check.
@@ -75,7 +99,7 @@ class UploadProvider extends ChangeNotifier {
     _state = _state.copyWith(
       status: UploadStatus.uploading,
       fileName: name,
-      progress: 0.15,
+      progress: 0.08,
       clearError: true,
     );
     notifyListeners();
@@ -94,8 +118,8 @@ class UploadProvider extends ChangeNotifier {
             : 'fixed'
         ..files.add(http.MultipartFile.fromBytes('file', bytes, filename: name));
 
-      _state = _state.copyWith(progress: 0.55);
-      notifyListeners();
+      // Creep toward 55% for the extraction/OCR/Model-1 leg of the upload.
+      _creepToward(0.55);
 
       // 60s was too tight once OCR (real per-page cost, up to 20 pages) got
       // added to upload processing — bumped to give large/scanned PDFs
@@ -103,6 +127,7 @@ class UploadProvider extends ChangeNotifier {
       // backend would have finished a bit later anyway.
       final streamed = await request.send().timeout(const Duration(seconds: 180));
       final response = await http.Response.fromStream(streamed);
+      _stopCreep();
 
       if (response.statusCode != 200) {
         final body = _tryDecode(response.body);
@@ -115,11 +140,18 @@ class UploadProvider extends ChangeNotifier {
         throw Exception('Upload succeeded but no material_id was returned.');
       }
 
+      _state = _state.copyWith(progress: 0.58);
+      notifyListeners();
+      // Creep toward 97% (never quite "done") for the Gemini question-
+      // generation leg — only the real response snaps it to 100%.
+      _creepToward(0.97);
+
       // Also bumped — a real Gemini call generating ~15 rich questions can
       // take longer than 60s, especially the first request in a session.
       final sessionResp = await http
           .post(Uri.parse('$kApiBaseUrl/material/$materialId/session/start'))
           .timeout(const Duration(seconds: 260));
+      _stopCreep();
 
       if (sessionResp.statusCode != 200) {
         final body = _tryDecode(sessionResp.body);
@@ -137,6 +169,7 @@ class UploadProvider extends ChangeNotifier {
       );
       notifyListeners();
     } catch (e) {
+      _stopCreep();
       _state = _state.copyWith(
         status: UploadStatus.error,
         error: 'Could not reach the AI backend. Is it running on $kApiBaseUrl? ($e)',
@@ -176,7 +209,14 @@ class UploadProvider extends ChangeNotifier {
   }
 
   void reset() {
+    _stopCreep();
     _state = const UploadState();
     notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _stopCreep();
+    super.dispose();
   }
 }

@@ -173,6 +173,7 @@ class TeacherSidebar extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _SidebarItem(TeacherNavSection.dashboard, Icons.grid_view_rounded, 'Dashboard'),
+      _SidebarItem(TeacherNavSection.helpRequests, Icons.support_agent_rounded, 'Help Requests'),
       _SidebarItem(TeacherNavSection.settings, Icons.settings_outlined, 'Settings'),
     ];
 

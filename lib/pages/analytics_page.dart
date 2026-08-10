@@ -26,7 +26,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
   @override
   void initState() {
     super.initState();
-    _service = widget.service ?? FirestoreStudentLearningService();
+    _service = widget.service ?? BackendStudentLearningService();
     _dashboardFuture = _service.getDashboard(widget.studentId);
   }
 
@@ -271,14 +271,11 @@ class _AnalyticsContent extends StatelessWidget {
           ),
           const SizedBox(height: 28),
 
-          // ── REAL DATA — from GET /user/<uid>/materials, unlike the mastery
-          // trend / topic breakdown / stat cards below, which still come
-          // from FirestoreStudentLearningService's seeded mock data. Making
-          // those genuinely real needs backend aggregation endpoints
-          // (mastery-over-time, total problems solved, topic-level scores)
-          // that don't exist yet — this section uses what the backend
-          // actually can tell us today: per-material session count, latest
-          // score, and material coverage.
+          // Per-material session count, latest score, and coverage — from
+          // GET /user/<uid>/materials. The mastery trend / topic breakdown /
+          // stat cards below come from GET /user/<uid>/analytics via
+          // BackendStudentLearningService — also real, computed from this
+          // student's actual stored sessions.
           _MaterialsOverviewSection(studentId: data.studentId),
           const SizedBox(height: 24),
 

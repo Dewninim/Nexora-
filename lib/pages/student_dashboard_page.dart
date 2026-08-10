@@ -26,7 +26,15 @@ class StudentDashboardPage extends StatefulWidget {
 }
 
 class _StudentDashboardPageState extends State<StudentDashboardPage> {
-  static final Map<String, Future<StudentDashboardData>> _dashboardFutures = {};
+  // Last-known-good data only — purely so re-visiting the dashboard paints
+  // instantly instead of an empty spinner while the fresh fetch below is
+  // in flight. NOT a source of truth: every mount below always kicks off a
+  // real fetch. This used to also cache the Future itself (via
+  // putIfAbsent), which meant the dashboard showed the SAME stale data for
+  // the rest of the app's lifetime after the first load — completing a
+  // session never updated mastery/review numbers here without a full app
+  // restart. That was the bug; this cache only ever holds what was really
+  // fetched, refreshed on every visit.
   static final Map<String, StudentDashboardData> _dashboardCache = {};
 
   late final StudentLearningService _service;
@@ -35,16 +43,8 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
   @override
   void initState() {
     super.initState();
-    _service = widget.service ?? FirestoreStudentLearningService();
-    // Temporarily seeding data right at startup to make sure collections exist
-    if (widget.service == null) {
-      final firestoreService = _service as FirestoreStudentLearningService;
-      firestoreService.seedMockData(widget.studentId).catchError((e) => debugPrint("Seed error: $e"));
-    }
-
-    _dashboardFuture = widget.service == null
-        ? _dashboardFutures.putIfAbsent(widget.studentId, _loadDashboard)
-        : _loadDashboard();
+    _service = widget.service ?? BackendStudentLearningService();
+    _dashboardFuture = _loadDashboard();
   }
 
   Future<StudentDashboardData> _loadDashboard() async {
@@ -132,10 +132,10 @@ class _DashboardContent extends StatelessWidget {
             children: [
               _DashboardHeader(streakDays: data.currentStreakDays),
               const SizedBox(height: 26),
-              // ── REAL DATA — pulled live from the Flask backend
-              // (/user/<uid>/materials), unlike everything below this line
-              // which still comes from FirestoreStudentLearningService's
-              // seeded mock data. See the note in _NextReviewsSection.
+              // Forgetting-curve-computed next reviews, pulled live from the
+              // Flask backend (/user/<uid>/materials). Everything else on
+              // this dashboard (below) comes from BackendStudentLearningService
+              // — also real, derived from /user/<uid>/analytics and materials.
               _NextReviewsSection(studentId: data.studentId),
               const SizedBox(height: 26),
               _RetentionOverview(data: data),
@@ -165,7 +165,13 @@ class _DashboardContent extends StatelessWidget {
                 },
               ),
               const SizedBox(height: 26),
-              _QuickCheckCard(prompt: data.quickCheck),
+              _QuickCheckCard(
+                prompt: data.quickCheck,
+                onAction: () => Navigator.pushNamed(
+                  context,
+                  data.recommendedConcepts.isEmpty ? '/upload' : '/review',
+                ),
+              ),
               const SizedBox(height: 26),
               _ProgressStats(stats: data.progressStats),
             ],
@@ -176,14 +182,10 @@ class _DashboardContent extends StatelessWidget {
   }
 }
 
-/// ── REAL DATA SECTION ────────────────────────────────────────────────────
 /// Fetches this student's actual materials from the Flask backend
 /// (GET /user/<uid>/materials — see backend/app.py) and shows their real,
-/// forgetting-curve-computed next review dates. Everything else on this
-/// dashboard currently comes from FirestoreStudentLearningService, which
-/// falls back to seeded mock data with no connection to the real upload/
-/// session/scoring pipeline at all — this section is the one genuine bridge
-/// between "what the student actually studied" and the dashboard.
+/// forgetting-curve-computed next review dates, with a "Continue" button
+/// that starts a real session against that material.
 class _NextReviewsSection extends StatefulWidget {
   final String studentId;
   const _NextReviewsSection({required this.studentId});
@@ -1125,8 +1127,9 @@ class _ConceptVisualPainter extends CustomPainter {
 
 class _QuickCheckCard extends StatelessWidget {
   final QuizPrompt prompt;
+  final VoidCallback onAction;
 
-  const _QuickCheckCard({required this.prompt});
+  const _QuickCheckCard({required this.prompt, required this.onAction});
 
   @override
   Widget build(BuildContext context) {
@@ -1178,7 +1181,7 @@ class _QuickCheckCard extends StatelessWidget {
                 width: isNarrow ? double.infinity : 190,
                 height: 64,
                 child: FilledButton(
-                  onPressed: () {},
+                  onPressed: onAction,
                   style: FilledButton.styleFrom(
                     backgroundColor: const Color(0xFFEAF1FF),
                     foregroundColor: neuromathixBlue,
