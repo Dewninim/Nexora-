@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 
 import '../models/teacher_models.dart';
 import '../services/teacher_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/teacher_app_shell.dart';
 import 'teacher_message_dialog.dart';
 import 'teacher_student_detail_page.dart';
@@ -83,93 +84,126 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
         }).toList();
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 36),
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 40),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1400),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Teacher Dashboard',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: neuromathixText,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Monitor mastery, retention, overdue reviews, and student help requests.',
-                              style: TextStyle(
-                                color: neuromathixMuted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                  // ── Hero Banner ──
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0F172A).withValues(alpha: 0.15),
+                          blurRadius: 20,
+                          offset: const Offset(0, 10),
                         ),
-                      ),
-                      FilledButton.icon(
-                        onPressed: _assignStudent,
-                        icon: const Icon(Icons.person_add_alt_1_rounded),
-                        label: const Text('Assign student'),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Teacher Dashboard',
+                                style: AppText.pageTitle.copyWith(color: Colors.white),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Monitor mastery, retention, overdue reviews, and student help requests.',
+                                style: AppText.bodyMuted.copyWith(color: const Color(0xFF94A3B8)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: _assignStudent,
+                          icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
+                          label: Text('Assign student', style: AppText.button),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 24),
                   _metricCards(students),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   _WhiteCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('Student Cohort Overview', style: AppText.sectionHeader),
+                        const SizedBox(height: 16),
                         LayoutBuilder(
                           builder: (context, constraints) {
                             final search = TextField(
                               onChanged: (value) =>
                                   setState(() => _query = value),
+                              style: AppText.body,
                               decoration: InputDecoration(
                                 hintText: 'Search student, email, or topic...',
-                                prefixIcon: const Icon(Icons.search_rounded),
+                                hintStyle: AppText.bodyMuted,
+                                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted),
                                 filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
+                                fillColor: AppColors.surface,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(
-                                    color: neuromathixBorder,
+                                    color: AppColors.border,
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(
-                                    color: neuromathixBorder,
+                                    color: AppColors.border,
                                   ),
                                 ),
                               ),
                             );
                             final filter = DropdownButtonFormField<StudentRiskLevel?>(
                               initialValue: _riskFilter,
+                              style: AppText.body,
                               decoration: InputDecoration(
                                 labelText: 'Risk level',
+                                labelStyle: AppText.caption,
+                                filled: true,
+                                fillColor: AppColors.surface,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppColors.border),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppColors.border),
                                 ),
                               ),
                               items: [
-                                const DropdownMenuItem<StudentRiskLevel?>(
+                                DropdownMenuItem<StudentRiskLevel?>(
                                   value: null,
-                                  child: Text('All risk levels'),
+                                  child: Text('All risk levels', style: AppText.body),
                                 ),
                                 ...StudentRiskLevel.values.map(
                                   (value) => DropdownMenuItem<StudentRiskLevel?>(
                                     value: value,
-                                    child: Text(value.label),
+                                    child: Text(value.label, style: AppText.body),
                                   ),
                                 ),
                               ],
@@ -194,14 +228,17 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                             );
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                         if (students.isEmpty)
                           _NoStudents(onAssign: _assignStudent)
                         else if (filtered.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 32),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
                             child: Center(
-                              child: Text('No students match the selected filters.'),
+                              child: Text(
+                                'No students match the selected filters.',
+                                style: AppText.bodyMuted,
+                              ),
                             ),
                           )
                         else
@@ -240,41 +277,64 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                 students.length)
             .round();
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _MetricCard(
-          icon: Icons.groups_rounded,
-          value: '${students.length}',
-          label: 'Assigned students',
-          color: neuromathixBlue,
-        ),
-        _MetricCard(
-          icon: Icons.warning_amber_rounded,
-          value: '$urgent',
-          label: 'Urgent risk',
-          color: const Color(0xFFDC2626),
-        ),
-        _MetricCard(
-          icon: Icons.event_busy_rounded,
-          value: '$overdue',
-          label: 'Overdue reviews',
-          color: const Color(0xFFD97706),
-        ),
-        _MetricCard(
-          icon: Icons.support_agent_rounded,
-          value: '$pending',
-          label: 'Help requests',
-          color: const Color(0xFF7C3AED),
-        ),
-        _MetricCard(
-          icon: Icons.workspace_premium_outlined,
-          value: '$average%',
-          label: 'Average mastery',
-          color: const Color(0xFF059669),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth < 700
+            ? (constraints.maxWidth - 16) / 2
+            : (constraints.maxWidth - 64) / 5;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.groups_rounded,
+                value: '${students.length}',
+                label: 'Assigned Students',
+                color: AppColors.accent,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.warning_amber_rounded,
+                value: '$urgent',
+                label: 'Urgent Risk',
+                color: AppColors.error,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.event_busy_rounded,
+                value: '$overdue',
+                label: 'Overdue Reviews',
+                color: AppColors.warning,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.support_agent_rounded,
+                value: '$pending',
+                label: 'Help Requests',
+                color: AppColors.info,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.workspace_premium_rounded,
+                value: '$average%',
+                label: 'Average Mastery',
+                color: AppColors.success,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
