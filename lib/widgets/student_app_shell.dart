@@ -147,25 +147,35 @@ class StudentTopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 96,
-      padding: const EdgeInsets.symmetric(horizontal: 44),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: neuromathixBorder)),
-      ),
-      child: Row(
-        children: [
-          Text(
-            'Hi, $userName',
-            style: AppText.display,
+    return LayoutBuilder(
+      builder: (context, c) {
+        final isSmall = c.maxWidth < 1000;
+
+        return Container(
+          height: isSmall ? 56 : 64,
+          padding: EdgeInsets.symmetric(horizontal: isSmall ? 18 : 44),
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(bottom: BorderSide(color: neuromathixBorder)),
           ),
-          const Spacer(),
-          NotificationBell(count: notificationCount),
-          const SizedBox(width: 20),
-          UserInitialAvatar(userName: userName),
-        ],
-      ),
+          child: Row(
+            children: [
+              Text(
+                'Hi, $userName',
+                style: GoogleFonts.dmSans(
+                  fontSize: isSmall ? 22 : 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const Spacer(),
+              NotificationBell(count: notificationCount),
+              const SizedBox(width: 14),
+              UserInitialAvatar(userName: userName),
+            ],
+          ),
+        );
+      },
     );
   }
 }
@@ -216,6 +226,12 @@ class StudentSidebar extends StatelessWidget {
         StudentNavSection.analytics,
         Icons.show_chart_outlined,
         'Analytics',
+
+      ),
+      _SidebarItem(
+        StudentNavSection.teacherMessages,
+        Icons.mark_chat_unread_outlined,
+        'Teacher Messages',
       ),
       _SidebarItem(
         StudentNavSection.settings,
@@ -225,67 +241,82 @@ class StudentSidebar extends StatelessWidget {
     ];
 
     return Container(
-      width: expanded ? 240 : 112,
+      width: expanded ? 260 : 128,
       color: neuromathixNavy,
       child: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 26),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: expanded ? 18 : 0),
-              child: Row(
-                mainAxisAlignment: expanded
-                    ? MainAxisAlignment.start
-                    : MainAxisAlignment.spaceEvenly,
-                children: [
-                  const Icon(
-                    Icons.psychology_outlined,
-                    color: Colors.white,
-                    size: 34,
-                  ),
-                  if (expanded) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'NEUROMATHIX',
-                        style: GoogleFonts.dmSans(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: expanded ? 18 : 0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/images/neuromathix_logo.png',
+                              width: 40,
+                              height: 40,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.psychology_outlined,
+                                color: Colors.white,
+                                size: 34,
+                              ),
+                            ),
+                            if (expanded) ...[
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'NEUROMATHIX',
+                                  style: GoogleFonts.dmSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
                         ),
                       ),
-                    ),
-                  ],
-                  const Icon(Icons.menu_rounded, color: Colors.white, size: 30),
-                ],
-              ),
-            ),
-            if (!expanded) ...[
-              const SizedBox(height: 6),
-              Text(
-                'NEUROMATHIX',
-                style: GoogleFonts.dmSans(
-                  color: Colors.white,
-                  fontSize: 11,
-                  letterSpacing: 0,
+                      if (!expanded) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'NEUROMATHIX',
+                          style: GoogleFonts.dmSans(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      for (final item in items)
+                        _SidebarButton(
+                          item: item,
+                          expanded: expanded,
+                          selected: activeSection == item.section,
+                          onTap: () => onSectionSelected(item.section),
+                        ),
+                      const Spacer(),
+                      _SidebarLogoutButton(
+                        expanded: expanded,
+                        onTap: () => _logout(context),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
                 ),
               ),
-            ],
-            const SizedBox(height: 38),
-            for (final item in items)
-              _SidebarButton(
-                item: item,
-                expanded: expanded,
-                selected: activeSection == item.section,
-                onTap: () => onSectionSelected(item.section),
-              ),
-            const Spacer(),
-            _SidebarLogoutButton(
-              expanded: expanded,
-              onTap: () => _logout(context),
-            ),
-            const SizedBox(height: 18),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -403,48 +434,43 @@ class _SidebarLogoutButton extends StatelessWidget {
 
 class NotificationBell extends StatelessWidget {
   final int count;
-
   const NotificationBell({super.key, required this.count});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48,
-      height: 48,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          const Align(
-            alignment: Alignment.center,
-            child: Icon(
-              Icons.notifications_none_rounded,
-              size: 32,
-              color: Colors.black,
-            ),
-          ),
-          if (count > 0)
-            Positioned(
-              right: 0,
-              top: 0,
-              child: Container(
-                width: 26,
-                height: 26,
+    return Tooltip(
+      message: count > 0 ? '$count review reminders' : 'No new notifications',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: () => Navigator.pushNamed(context, '/review'),
+        child: SizedBox(
+          width: 44,
+          height: 44,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              const Align(
                 alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.error,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '$count',
-                  style: GoogleFonts.dmSans(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
+                child: Icon(Icons.notifications_none_rounded, size: 26, color: AppColors.textDark),
+              ),
+              if (count > 0)
+                Positioned(
+                  right: 2,
+                  top: 2,
+                  child: Container(
+                    width: 20,
+                    height: 20,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)),
+                    child: Text(
+                      '$count',
+                      style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 11),
+                    ),
                   ),
                 ),
-              ),
-            ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -460,15 +486,22 @@ class UserInitialAvatar extends StatelessWidget {
     final trimmedName = userName.trim();
     final initial = trimmedName.isEmpty ? '?' : trimmedName[0].toUpperCase();
 
-    return CircleAvatar(
-      radius: 30,
-      backgroundColor: const Color(0xFF0D315E),
-      child: Text(
-        initial,
-        style: GoogleFonts.dmSans(
-          color: Colors.white,
-          fontWeight: FontWeight.w800,
-          fontSize: 26,
+    return Tooltip(
+      message: 'View Profile & Settings',
+      child: InkWell(
+        borderRadius: BorderRadius.circular(20),
+        onTap: () => Navigator.pushNamed(context, '/profile'),
+        child: CircleAvatar(
+          radius: 20,
+          backgroundColor: AppColors.primary,
+          child: Text(
+            initial,
+            style: GoogleFonts.dmSans(
+              color: Colors.white,
+              fontWeight: FontWeight.w800,
+              fontSize: 16,
+            ),
+          ),
         ),
       ),
     );

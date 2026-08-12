@@ -42,6 +42,9 @@ class AppText {
       fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.textDark, height: 1.25);
 
   static TextStyle get display => pageTitle;
+  static TextStyle get h1 => pageTitle;
+  static TextStyle get h2 => sectionHeader;
+  static TextStyle get h3 => cardTitle;
 
   // 2. SECTION TOPIC / HEADER (e.g., "Recommended Now", "Student Help Requests") -> Always 18px Bold
   static TextStyle get sectionHeader => GoogleFonts.dmSans(
@@ -58,6 +61,8 @@ class AppText {
   // 5. BODY MUTED (Subtitles, secondary descriptions) -> Always 13.5px Regular Faded
   static TextStyle get bodyMuted => GoogleFonts.dmSans(
       fontSize: 13.5, fontWeight: FontWeight.w400, color: AppColors.textMuted, height: 1.5);
+
+  static TextStyle get bodySmall => bodyMuted;
 
   // 6. BODY MEDIUM / BOLD (Emphasized text inside paragraphs) -> Always 13.5px SemiBold
   static TextStyle get bodyMedium => GoogleFonts.dmSans(

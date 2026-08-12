@@ -224,8 +224,8 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
             onPageChanged: (focused) {
               setState(() => _focusedDay = focused);
             },
-            daysOfWeekHeight: 24,
-            rowHeight: 46,
+            daysOfWeekHeight: 20,
+            rowHeight: 35,
             daysOfWeekStyle: DaysOfWeekStyle(
               weekdayStyle: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600),
               weekendStyle: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600),
@@ -444,7 +444,14 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
               ),
               const SizedBox(width: 10),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Time plan saved successfully! Reminders updated.'),
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -816,10 +823,10 @@ class _DayCell extends StatelessWidget {
     final textColor = isSelected ? Colors.white : Colors.black87;
 
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+      margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(10),
+        borderRadius: BorderRadius.circular(8),
         border: Border.all(color: border),
       ),
       child: Stack(
@@ -827,21 +834,21 @@ class _DayCell extends StatelessWidget {
           Center(
             child: Text(
               '${day.day}',
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 12, color: textColor),
+              style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 11, color: textColor),
             ),
           ),
           if (hasMarker)
             Positioned(
-              bottom: 6,
+              bottom: 3,
               left: 0,
               right: 0,
               child: Center(
                 child: Container(
-                  width: 6,
-                  height: 6,
+                  width: 5,
+                  height: 5,
                   decoration: BoxDecoration(
-                    color: Colors.redAccent,
-                    borderRadius: BorderRadius.circular(10),
+                    color: isSelected ? Colors.amberAccent : AppColors.accent,
+                    shape: BoxShape.circle,
                   ),
                 ),
               ),

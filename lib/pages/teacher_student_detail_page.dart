@@ -597,7 +597,15 @@ class _ManualReviewDialogState extends State<_ManualReviewDialog> {
         FilledButton(
           onPressed: () {
             final concept = _concept.text.trim();
-            if (concept.isEmpty) return;
+            if (concept.isEmpty) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Please enter a Mathematics topic name.'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+              return;
+            }
             final scheduledAt = DateTime(
               _date.year,
               _date.month,

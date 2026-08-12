@@ -48,6 +48,19 @@ class AuthService {
       final firstName = parts.first;
       final lastName = parts.length > 1 ? parts.skip(1).join(' ') : '';
 
+      // Automatically assign new registered student to teacher
+      String? assignedTeacherId;
+
+      final teacherQuery = await _db
+          .collection('users')
+          .where('role', isEqualTo: 'teacher')
+          .limit(1)
+          .get();
+
+      if (teacherQuery.docs.isNotEmpty) {
+        assignedTeacherId = teacherQuery.docs.first.id;
+      }
+
       await _db.collection('users').doc(user.uid).set({
         'uid': user.uid,
         'email': normalizedEmail,
@@ -56,7 +69,7 @@ class AuthService {
         'firstName': firstName,
         'lastName': lastName,
         'role': 'student',
-        'teacherId': null,
+        'teacherId': assignedTeacherId,
         'accountStatus': 'active',
         'emailVerified': false,
         'settings': {
@@ -71,6 +84,25 @@ class AuthService {
         'updatedAt': FieldValue.serverTimestamp(),
         'lastLoginAt': FieldValue.serverTimestamp(),
       });
+
+      if (assignedTeacherId != null) {
+        await _db.collection('teacherStudentSummaries').doc(user.uid).set({
+          'studentId': user.uid,
+          'teacherId': assignedTeacherId,
+          'displayName': cleanName,
+          'email': normalizedEmail,
+          'currentTopic': 'No active topic',
+          'masteryPercent': 0,
+          'retentionPercent': 0,
+          'overdueReviews': 0,
+          'pendingHelpRequests': 0,
+          'completedReviews': 0,
+          'riskLevel': 'reviewSoon',
+          'riskReasons': ['Newly registered student'],
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
 
       await user.sendEmailVerification();
     } catch (_) {
@@ -97,6 +129,18 @@ class AuthService {
 
     final userRef = _db.collection('users').doc(user.uid);
     final document = await userRef.get();
+
+    // Auto-fetch default teacher
+    String? defaultTeacherId;
+    final teacherQuery = await _db
+        .collection('users')
+        .where('role', isEqualTo: 'teacher')
+        .limit(1)
+        .get();
+    if (teacherQuery.docs.isNotEmpty) {
+      defaultTeacherId = teacherQuery.docs.first.id;
+    }
+
     if (!document.exists) {
       // Account exists in Firebase Auth but has no profile doc yet (e.g.
       // pre-existing account from before this schema) — backfill it.
@@ -106,22 +150,59 @@ class AuthService {
         'emailLower': user.email?.toLowerCase(),
         'displayName': user.displayName ?? user.email?.split('@').first,
         'role': 'student',
+        'teacherId': defaultTeacherId,
         'accountStatus': 'active',
         'emailVerified': user.emailVerified,
         'createdAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
       });
     } else {
-      final status = document.data()?['accountStatus']?.toString() ?? 'active';
+      final data = document.data() ?? {};
+      final status = data['accountStatus']?.toString() ?? 'active';
+      final role = data['role']?.toString() ?? 'student';
       if (status != 'active') {
         await _auth.signOut();
         throw const AuthFlowException('This account is not active. Contact the administrator.');
       }
-      await userRef.update({
+
+      final updates = <String, dynamic>{
         'emailVerified': user.emailVerified,
         'lastLoginAt': FieldValue.serverTimestamp(),
         'updatedAt': FieldValue.serverTimestamp(),
-      });
+      };
+
+      if (role == 'student' && (data['teacherId'] == null || data['teacherId'].toString().isEmpty)) {
+        if (defaultTeacherId != null) {
+          updates['teacherId'] = defaultTeacherId;
+        }
+      }
+
+      await userRef.update(updates);
+    }
+
+    // Ensure teacherStudentSummaries doc exists if student has an assigned teacher
+    if (defaultTeacherId != null) {
+      final summaryRef = _db.collection('teacherStudentSummaries').doc(user.uid);
+      final summaryDoc = await summaryRef.get();
+      if (!summaryDoc.exists) {
+        final displayName = user.displayName ?? user.email?.split('@').first ?? 'Student';
+        await summaryRef.set({
+          'studentId': user.uid,
+          'teacherId': defaultTeacherId,
+          'displayName': displayName,
+          'email': user.email ?? '',
+          'currentTopic': 'No active topic',
+          'masteryPercent': 0,
+          'retentionPercent': 0,
+          'overdueReviews': 0,
+          'pendingHelpRequests': 0,
+          'completedReviews': 0,
+          'riskLevel': 'reviewSoon',
+          'riskReasons': ['Registered student'],
+          'createdAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        });
+      }
     }
   }
 

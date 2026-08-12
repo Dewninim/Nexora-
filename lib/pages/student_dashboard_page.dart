@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -100,6 +102,8 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
     switch (section) {
       case StudentNavSection.dashboard:
         return '/student-dashboard';
+      case StudentNavSection.teacherMessages:
+        return '/teacher-messages';
       case StudentNavSection.uploadMaterial:
         return '/upload';
       case StudentNavSection.aiFeedback:
@@ -142,11 +146,7 @@ class _DashboardContent extends StatelessWidget {
               const SizedBox(height: 30),
               Text(
                 'Recommended Now',
-                style: GoogleFonts.dmSans(
-                  fontSize: 23,
-                  fontWeight: FontWeight.w800,
-                  color: neuromathixText,
-                ),
+                style: AppText.sectionHeader,
               ),
               const SizedBox(height: 16),
               _RecommendedConceptGrid(
@@ -458,27 +458,45 @@ class _DashboardHeader extends StatelessWidget {
             else
               const Expanded(child: _HeaderCopy()),
             if (isNarrow) const SizedBox(height: 18),
-            Column(
-              crossAxisAlignment: isNarrow
-                  ? CrossAxisAlignment.start
-                  : CrossAxisAlignment.end,
+            Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'Current Streak',
-                  style: GoogleFonts.dmSans(
-                    color: neuromathixMuted,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
+                ElevatedButton.icon(
+                  onPressed: () => _showStudentHelpDialog(context),
+                  icon: const Icon(Icons.support_agent_rounded, size: 18),
+                  label: Text('Ask Teacher for Help', style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 13)),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    elevation: 0,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  '$streakDays Days',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: neuromathixText,
-                  ),
+                const SizedBox(width: 16),
+                Column(
+                  crossAxisAlignment: isNarrow
+                      ? CrossAxisAlignment.start
+                      : CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Current Streak',
+                      style: GoogleFonts.dmSans(
+                        color: neuromathixMuted,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$streakDays Days',
+                      style: GoogleFonts.dmSans(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: neuromathixText,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -499,20 +517,12 @@ class _HeaderCopy extends StatelessWidget {
       children: [
         Text(
           'Dashboard',
-          style: GoogleFonts.dmSans(
-            fontSize: 38,
-            fontWeight: FontWeight.w900,
-            color: neuromathixText,
-          ),
+          style: AppText.pageTitle,
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 4),
         Text(
           'Get a glimpse of your learning journey',
-          style: GoogleFonts.dmSans(
-            fontSize: 24,
-            fontWeight: FontWeight.w400,
-            color: neuromathixText,
-          ),
+          style: AppText.bodyMuted,
         ),
       ],
     );
@@ -568,7 +578,7 @@ class _RetentionOverview extends StatelessWidget {
                     Container(width: 1, height: 280, color: neuromathixBorder),
                     const SizedBox(width: 28),
                     SizedBox(
-                      width: 190,
+                      width: 220,
                       child: _MetricRail(metrics: data.keyMetrics),
                     ),
                   ],
@@ -595,20 +605,12 @@ class _RetentionTitle extends StatelessWidget {
             children: [
               Text(
                 'Memory Retention Overview',
-                style: GoogleFonts.dmSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: neuromathixText,
-                ),
+                style: AppText.sectionHeader,
               ),
               const SizedBox(height: 4),
               Text(
                 'Real-time synaptic strength visualization',
-                style: GoogleFonts.dmSans(
-                  fontSize: 15,
-                  color: neuromathixMuted,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppText.bodyMuted,
               ),
             ],
           ),
@@ -618,11 +620,7 @@ class _RetentionTitle extends StatelessWidget {
           children: [
             Text(
               '${data.retentionPercent}%',
-              style: GoogleFonts.dmSans(
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-                color: neuromathixText,
-              ),
+              style: AppText.metricValue,
             ),
             Text(
               data.retentionDeltaLabel,
@@ -697,12 +695,16 @@ class _MetricItem extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 18),
             const SizedBox(width: 8),
-            Text(
-              metric.value,
-              style: GoogleFonts.dmSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: neuromathixText,
+            Expanded(
+              child: Text(
+                metric.value,
+                style: GoogleFonts.dmSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: neuromathixText,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -1315,6 +1317,122 @@ class _WhiteCard extends StatelessWidget {
       ),
       child: child,
     );
+  }
+}
+
+Future<void> _showStudentHelpDialog(BuildContext context) async {
+  final topicCtrl = TextEditingController();
+  final descCtrl = TextEditingController();
+  final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+  final studentName = FirebaseAuth.instance.currentUser?.displayName ??
+      FirebaseAuth.instance.currentUser?.email?.split('@').first ??
+      'Student';
+
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (dialogCtx) {
+      return AlertDialog(
+        title: Text('Ask Teacher for Help', style: AppText.sectionHeader),
+        content: SizedBox(
+          width: 460,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Enter the mathematics topic and a brief description of what you need help with:',
+                style: AppText.bodyMuted,
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: topicCtrl,
+                autofocus: true,
+                style: AppText.body,
+                decoration: InputDecoration(
+                  labelText: 'Topic Name',
+                  hintText: 'e.g. Integration by Parts',
+                  labelStyle: AppText.caption,
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              TextField(
+                controller: descCtrl,
+                minLines: 3,
+                maxLines: 6,
+                style: AppText.body,
+                decoration: InputDecoration(
+                  labelText: 'Description / Question',
+                  hintText: 'Describe the problem or step where you got stuck...',
+                  labelStyle: AppText.caption,
+                  filled: true,
+                  fillColor: AppColors.surface,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: Text('Cancel', style: AppText.bodyMuted),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            child: Text('Send to Teacher', style: AppText.button),
+          ),
+        ],
+      );
+    },
+  );
+
+  if (result == true && context.mounted) {
+    final topic = topicCtrl.text.trim();
+    final desc = descCtrl.text.trim();
+    if (topic.isEmpty || desc.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter both topic name and description.')),
+      );
+      return;
+    }
+
+    try {
+      // Fetch assigned teacherId if available
+      String teacherId = '';
+      if (uid.isNotEmpty) {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        teacherId = userDoc.data()?['teacherId']?.toString() ?? '';
+      }
+
+      final docRef = FirebaseFirestore.instance.collection('helpRequests').doc();
+      await docRef.set({
+        'studentId': uid,
+        'teacherId': teacherId,
+        'studentName': studentName,
+        'studentEmail': FirebaseAuth.instance.currentUser?.email ?? '',
+        'conceptName': topic,
+        'studentMessage': desc,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Help request sent! Your teacher will be notified.')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send help request: $e')),
+      );
+    }
   }
 }
 

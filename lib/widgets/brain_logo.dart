@@ -13,7 +13,16 @@ class BrainLogo extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(painter: _BrainPainter()),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(size * 0.5),
+        child: Image.asset(
+          'assets/images/neuromathix_logo.png',
+          width: size,
+          height: size,
+          fit: BoxFit.cover,
+          errorBuilder: (context, error, stackTrace) => CustomPaint(painter: _BrainPainter()),
+        ),
+      ),
     );
   }
 }

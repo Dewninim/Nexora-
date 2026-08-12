@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../models/teacher_models.dart';
@@ -46,6 +47,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
           activeSection: _active,
           userName: _displayName,
           notificationCount: notificationCount,
+          onNotificationTap: () => setState(() => _active = TeacherNavSection.helpRequests),
           onSectionSelected: (section) => setState(() => _active = section),
           child: switch (_active) {
             TeacherNavSection.dashboard => _dashboardBody(),
@@ -835,48 +837,153 @@ class _AssignStudentDialog extends StatefulWidget {
 }
 
 class _AssignStudentDialogState extends State<_AssignStudentDialog> {
-  final TextEditingController _email = TextEditingController();
+  final TeacherService _service = TeacherService();
+  List<Map<String, String>> _allStudents = [];
+  Map<String, String>? _selectedStudent;
+  bool _loading = true;
+  String? _error;
 
   @override
-  void dispose() {
-    _email.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _fetchStudents();
+  }
+
+  Future<void> _fetchStudents() async {
+    try {
+      final students = await _service.getAllRegisteredStudents();
+      if (!mounted) return;
+      setState(() {
+        _allStudents = students;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Assign existing student'),
+      title: Text('Assign Registered Student', style: AppText.sectionHeader),
       content: SizedBox(
-        width: 440,
-        child: TextField(
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Student email address',
-            hintText: 'student@example.com',
-            border: OutlineInputBorder(),
-          ),
-          onSubmitted: (_) => _submit(),
-        ),
+        width: 480,
+        child: _loading
+            ? const SizedBox(height: 120, child: Center(child: CircularProgressIndicator()))
+            : _error != null
+                ? Text('Error loading students: $_error', style: AppText.bodyMuted)
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Type a student\'s name or email to view instant registered suggestions:',
+                        style: AppText.bodyMuted,
+                      ),
+                      const SizedBox(height: 16),
+                      Autocomplete<Map<String, String>>(
+                        displayStringForOption: (s) => '${s['displayName']} (${s['email']})',
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          final query = textEditingValue.text.trim().toLowerCase();
+                          if (query.isEmpty) {
+                            return _allStudents;
+                          }
+                          return _allStudents.where((s) {
+                            final name = s['displayName']?.toLowerCase() ?? '';
+                            final email = s['email']?.toLowerCase() ?? '';
+                            return name.contains(query) || email.contains(query);
+                          });
+                        },
+                        onSelected: (Map<String, String> selection) {
+                          setState(() => _selectedStudent = selection);
+                        },
+                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            autofocus: true,
+                            style: AppText.body,
+                            decoration: InputDecoration(
+                              labelText: 'Type Student Name or Email...',
+                              labelStyle: AppText.caption,
+                              prefixIcon: const Icon(Icons.person_search_rounded, color: AppColors.primary),
+                              filled: true,
+                              fillColor: AppColors.surface,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                            ),
+                          );
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 6,
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              child: Container(
+                                width: 440,
+                                constraints: const BoxConstraints(maxHeight: 220),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: AppColors.border),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: ListView.separated(
+                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.border),
+                                  itemBuilder: (BuildContext context, int index) {
+                                    final option = options.elementAt(index);
+                                    return ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                        child: Text(
+                                          (option['displayName'] ?? 'S')[0].toUpperCase(),
+                                          style: GoogleFonts.dmSans(color: AppColors.primary, fontWeight: FontWeight.w800),
+                                        ),
+                                      ),
+                                      title: Text(option['displayName'] ?? '', style: AppText.body),
+                                      subtitle: Text(option['email'] ?? '', style: AppText.bodyMuted),
+                                      onTap: () => onSelected(option),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text('Cancel', style: AppText.bodyMuted),
         ),
         FilledButton(
-          onPressed: _submit,
-          child: const Text('Assign'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: _selectedStudent == null ? null : _submit,
+          child: Text('Assign Student', style: AppText.button),
         ),
       ],
     );
   }
 
   void _submit() {
-    final email = _email.text.trim();
-    if (email.isEmpty) return;
+    final email = _selectedStudent?['email'];
+    if (email == null || email.isEmpty) return;
     Navigator.pop(context, email);
   }
 }

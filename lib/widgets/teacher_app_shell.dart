@@ -23,6 +23,7 @@ class TeacherAppShell extends StatelessWidget {
   final int notificationCount;
   final Widget child;
   final ValueChanged<TeacherNavSection> onSectionSelected;
+  final VoidCallback? onNotificationTap;
 
   const TeacherAppShell({
     super.key,
@@ -31,6 +32,7 @@ class TeacherAppShell extends StatelessWidget {
     required this.notificationCount,
     required this.child,
     required this.onSectionSelected,
+    this.onNotificationTap,
   });
 
   @override
@@ -61,10 +63,16 @@ class TeacherAppShell extends StatelessWidget {
               centerTitle: false,
               title: Text(
                 'Hi, $userName',
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, color: AppColors.textDark),
+                style: GoogleFonts.dmSans(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textDark,
+                ),
               ),
               actions: [
-                NotificationBell(count: notificationCount),
+                NotificationBell(
+                  count: notificationCount,
+                  onTap: onNotificationTap,
+                ),
                 const SizedBox(width: 8),
                 UserInitialAvatar(userName: userName),
                 const SizedBox(width: 12),
@@ -92,6 +100,7 @@ class TeacherAppShell extends StatelessWidget {
                     TeacherTopBar(
                       userName: userName,
                       notificationCount: notificationCount,
+                      onNotificationTap: onNotificationTap,
                     ),
                     Expanded(child: child),
                   ],
@@ -108,11 +117,13 @@ class TeacherAppShell extends StatelessWidget {
 class TeacherTopBar extends StatelessWidget {
   final String userName;
   final int notificationCount;
+  final VoidCallback? onNotificationTap;
 
   const TeacherTopBar({
     super.key,
     required this.userName,
     required this.notificationCount,
+    this.onNotificationTap,
   });
 
   @override
@@ -139,7 +150,10 @@ class TeacherTopBar extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              NotificationBell(count: notificationCount),
+              NotificationBell(
+                count: notificationCount,
+                onTap: onNotificationTap,
+              ),
               const SizedBox(width: 14),
               UserInitialAvatar(userName: userName),
             ],
@@ -178,50 +192,82 @@ class TeacherSidebar extends StatelessWidget {
     ];
 
     return Container(
-      width: expanded ? 240 : 112,
+      width: expanded ? 260 : 128,
       color: neuromathixNavy,
       child: SafeArea(
-        child: Column(
-          children: [
-            const SizedBox(height: 26),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: expanded ? 18 : 0),
-              child: Row(
-                mainAxisAlignment: expanded ? MainAxisAlignment.start : MainAxisAlignment.spaceEvenly,
-                children: [
-                  const Icon(Icons.psychology_outlined, color: Colors.white, size: 34),
-                  if (expanded) ...[
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'NEUROMATHIX',
-                        style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w700),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      Padding(
+                        padding: EdgeInsets.symmetric(horizontal: expanded ? 18 : 0),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Image.asset(
+                              'assets/images/neuromathix_logo.png',
+                              width: 40,
+                              height: 40,
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.psychology_outlined,
+                                color: Colors.white,
+                                size: 34,
+                              ),
+                            ),
+                            if (expanded) ...[
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  'NEUROMATHIX',
+                                  style: GoogleFonts.dmSans(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                  const Icon(Icons.menu_rounded, color: Colors.white, size: 30),
-                ],
+                      if (!expanded) ...[
+                        const SizedBox(height: 6),
+                        Text(
+                          'NEUROMATHIX',
+                          style: GoogleFonts.dmSans(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 20),
+                      for (final item in items)
+                        _SidebarButton(
+                          item: item,
+                          expanded: expanded,
+                          selected: activeSection == item.section,
+                          onTap: () => onSectionSelected(item.section),
+                        ),
+                      const Spacer(),
+                      _SidebarLogoutButton(
+                        expanded: expanded,
+                        onTap: () => _logout(context),
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            if (!expanded) ...[
-              const SizedBox(height: 6),
-              Text('NEUROMATHIX', style: GoogleFonts.dmSans(color: Colors.white, fontSize: 11)),
-            ],
-            const SizedBox(height: 38),
-            for (final item in items)
-              _SidebarButton(
-                item: item,
-                expanded: expanded,
-                selected: activeSection == item.section,
-                onTap: () => onSectionSelected(item.section),
-              ),
-            const Spacer(),
-            _SidebarLogoutButton(
-              expanded: expanded,
-              onTap: () => _logout(context),
-            ),
-            const SizedBox(height: 18),
-          ],
+            );
+          },
         ),
       ),
     );
@@ -329,33 +375,38 @@ class _SidebarItem {
 
 class NotificationBell extends StatelessWidget {
   final int count;
-  const NotificationBell({super.key, required this.count});
+  final VoidCallback? onTap;
+  const NotificationBell({super.key, required this.count, this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 48,
-      height: 48,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          const Align(
-            alignment: Alignment.center,
-            child: Icon(Icons.notifications_none_rounded, size: 32, color: Colors.black),
-          ),
-          if (count > 0)
-            Positioned(
-              right: 0,
-              top: 0,
-              child: Container(
-                width: 26,
-                height: 26,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(16)),
-                child: Text('$count', style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
-              ),
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(24),
+      child: SizedBox(
+        width: 48,
+        height: 48,
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Align(
+              alignment: Alignment.center,
+              child: Icon(Icons.notifications_none_rounded, size: 32, color: Colors.black),
             ),
-        ],
+            if (count > 0)
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(16)),
+                  child: Text('$count', style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -367,13 +418,69 @@ class UserInitialAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final trimmed = userName.trim();
-    final initial = trimmed.isEmpty ? '?' : trimmed[0].toUpperCase();
+    final initial = userName.trim().isEmpty ? 'T' : userName.trim()[0].toUpperCase();
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user?.email ?? '';
 
-    return CircleAvatar(
-      radius: 30,
-      backgroundColor: const Color(0xFF0D315E),
-      child: Text(initial, style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 26)),
+    return PopupMenuButton<int>(
+      offset: const Offset(0, 56),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: 8,
+      child: Tooltip(
+        message: 'Signed in as $userName',
+        child: Container(
+          width: 46,
+          height: 46,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            initial,
+            style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+          ),
+        ),
+      ),
+      onSelected: (val) {
+        if (val == 1) {
+          _logout(context);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<int>(
+          enabled: false,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(userName, style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, color: AppColors.textDark, fontSize: 14)),
+              if (email.isNotEmpty)
+                Text(email, style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 12)),
+              const SizedBox(height: 6),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text('Approved Teacher', style: GoogleFonts.dmSans(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w700)),
+              ),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        PopupMenuItem<int>(
+          value: 1,
+          child: Row(
+            children: [
+              const Icon(Icons.logout_rounded, color: AppColors.error, size: 18),
+              const SizedBox(width: 10),
+              Text('Sign Out', style: GoogleFonts.dmSans(color: AppColors.error, fontWeight: FontWeight.w700, fontSize: 13)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

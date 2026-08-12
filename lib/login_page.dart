@@ -51,11 +51,10 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    const Icon(Icons.psychology_alt_rounded, color: Colors.white, size: 36),
-                    const SizedBox(height: 4),
-                    Text('NEUROMATHIX', style: GoogleFonts.dmSans(color: Colors.white, fontSize: 9,
-                        fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+                  Row(children: [
+                    Image.asset('assets/images/neuromathix_logo.png', width: 44, height: 44),
+                    const SizedBox(width: 12),
+                    Text('NEUROMATHIX', style: AppText.sectionHeader.copyWith(color: Colors.white, letterSpacing: 1.5)),
                   ]),
                   const SizedBox(height: 80),
                   Text('Start your journey to\nmathematical mastery',

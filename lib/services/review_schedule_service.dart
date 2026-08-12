@@ -68,7 +68,19 @@ class ReviewScheduleService {
     final studentId = currentUser.uid;
     final userDoc = await _firestore.collection('users').doc(studentId).get();
     final userData = userDoc.data() ?? const <String, dynamic>{};
-    final teacherId = userData['teacherId']?.toString();
+    String? teacherId = userData['teacherId']?.toString();
+
+    if (teacherId == null || teacherId.isEmpty) {
+      final tQuery = await _firestore
+          .collection('users')
+          .where('role', isEqualTo: 'teacher')
+          .limit(1)
+          .get();
+      if (tQuery.docs.isNotEmpty) {
+        teacherId = tQuery.docs.first.id;
+        await _firestore.collection('users').doc(studentId).update({'teacherId': teacherId});
+      }
+    }
 
     final sessionId = result['session_id']?.toString() ?? '';
     final materialId = result['material_id']?.toString();
