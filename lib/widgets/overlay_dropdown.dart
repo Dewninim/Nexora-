@@ -146,9 +146,9 @@ class _OverlayDropdownItem extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixText,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             fontSize: 16,
           ),
         ),

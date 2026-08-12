@@ -1,5 +1,6 @@
 enum StudentNavSection {
   dashboard,
+  teacherMessages,
   uploadMaterial,
   aiFeedback,
   reviewSchedule,

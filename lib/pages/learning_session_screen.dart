@@ -29,6 +29,7 @@ import '../config/api_config.dart';
 import '../models/student_learning_models.dart';
 import '../services/review_schedule_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/student_app_shell.dart';
 import 'explainable_ai_feedback_page.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
@@ -465,14 +466,14 @@ class _LearningSessionScreenState
             const Icon(Icons.timer_off_outlined, color: Color(0xFFDC2626)),
             const SizedBox(width: 10),
             Text('Time\'s up!',
-                style: GoogleFonts.dmSans(fontWeight: FontWeight.w800)),
+                style: GoogleFonts.openSans(fontWeight: FontWeight.w600)),
           ],
         ),
         content: Text(
           'You\'ve used the allotted ${q.timeAllottedSeconds}s for this question '
           '(${q.topic}). You can keep trying — the extra time will be tracked '
           'separately and shown in red — or move on and come back to it later.',
-          style: GoogleFonts.dmSans(fontSize: 13.5, height: 1.5),
+          style: GoogleFonts.openSans(fontSize: 13.5, height: 1.5),
         ),
         actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
         actions: [
@@ -482,7 +483,7 @@ class _LearningSessionScreenState
               _moveOnFromTimeout(qIndex);
             },
             child: Text('Move On',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                     color: const Color(0xFF6B7280), fontWeight: FontWeight.w700)),
           ),
           ElevatedButton(
@@ -725,9 +726,9 @@ class _LearningSessionScreenState
           ),
           const SizedBox(width: 12),
           Text('NUROMATHIX',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                   color: Colors.white,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   fontSize: 13,
                   letterSpacing: 1.5)),
           const Spacer(),
@@ -735,18 +736,31 @@ class _LearningSessionScreenState
             Icon(Icons.notifications_outlined,
                 color: Colors.white.withOpacity(0.7), size: 20),
             const SizedBox(width: 16),
-            Container(
-              width: 30,
-              height: 30,
-              decoration: const BoxDecoration(
-                  color: AppColors.accent, shape: BoxShape.circle),
-              child: const Center(
-                child: Text('R',
-                    style: TextStyle(
+            Builder(
+              builder: (context) {
+                final name = authUserNameFrom(FirebaseAuth.instance.currentUser, fallback: 'Chamika');
+                final initial = name.isNotEmpty ? name[0].toUpperCase() : 'C';
+
+                return Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.goldAccent, width: 1.5),
+                  ),
+                  child: Center(
+                    child: Text(
+                      initial,
+                      style: GoogleFonts.openSans(
                         color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 13)),
-              ),
+                        fontWeight: FontWeight.w600,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ],
@@ -797,7 +811,7 @@ class _LearningSessionScreenState
                       sessionTitle.length > 50
                           ? '${sessionTitle.substring(0, 50)}…'
                           : sessionTitle,
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.openSans(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
                           color: AppColors.primary),
@@ -805,7 +819,7 @@ class _LearningSessionScreenState
                   ),
                   Text(
                     'Session Progress ${(_progress * 100).round()}%',
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.openSans(
                         fontSize: 11.5,
                         color: AppColors.accent,
                         fontWeight: FontWeight.w600),
@@ -905,7 +919,7 @@ class _LearningSessionScreenState
               children: [
                 Text(
                   'QUESTION ${i + 1} · ${_formatLabel(q.format)}',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: AppColors.textFaint,
@@ -913,7 +927,7 @@ class _LearningSessionScreenState
                 ),
                 Text(
                   q.topic.toUpperCase(),
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                       color: const Color(0xFF6366F1),
@@ -942,7 +956,7 @@ class _LearningSessionScreenState
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
             child: Text(q.topic,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
                     color: AppColors.primary)),
@@ -953,7 +967,7 @@ class _LearningSessionScreenState
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
               child: Text(
                 'This question unlocks once you confirm question $i.',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                     fontSize: 13, color: AppColors.textFaint),
               ),
             )
@@ -1146,7 +1160,7 @@ class _LearningSessionScreenState
           const SizedBox(width: 8),
           Expanded(
             child: Text('Your answer: $text',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                     fontSize: 12.5,
                     color: const Color(0xFF166534),
                     fontWeight: FontWeight.w600)),
@@ -1160,12 +1174,12 @@ class _LearningSessionScreenState
     final parts = text.split('_____');
     if (parts.length < 2) {
       return Text(text,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
               fontSize: 14, color: const Color(0xFF374151), height: 1.55));
     }
     return RichText(
       text: TextSpan(
-        style: GoogleFonts.dmSans(
+        style: GoogleFonts.openSans(
             fontSize: 14, color: const Color(0xFF374151), height: 1.55),
         children: [
           TextSpan(text: parts[0]),
@@ -1182,7 +1196,7 @@ class _LearningSessionScreenState
                 ),
               ),
               child: Text('      ?      ',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                       color: AppColors.accent, fontSize: 14)),
             ),
           ),
@@ -1201,7 +1215,7 @@ class _LearningSessionScreenState
           const Icon(Icons.error_outline, color: Color(0xFFDC2626), size: 48),
           const SizedBox(height: 16),
           Text('Something went wrong',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: AppColors.primary)),
@@ -1210,7 +1224,7 @@ class _LearningSessionScreenState
             padding: const EdgeInsets.symmetric(horizontal: 32),
             child: Text(_error ?? 'Unknown error',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                     fontSize: 13, color: const Color(0xFF6B7280))),
           ),
           const SizedBox(height: 20),
@@ -1349,7 +1363,7 @@ class _Model1Badge extends StatelessWidget {
             const SizedBox(width: 3),
             Text('M1: $score/5',
                 style: const TextStyle(
-                    color: Color(0xFF7C3AED), fontSize: 9.5, fontWeight: FontWeight.w800)),
+                    color: Color(0xFF7C3AED), fontSize: 9.5, fontWeight: FontWeight.w600)),
           ],
         ),
       ),
@@ -1493,10 +1507,10 @@ class _ShortAnswerFieldState extends State<_ShortAnswerField> {
         enabled: widget.enabled,
         onChanged: widget.onChanged,
         inputFormatters: [LengthLimitingTextInputFormatter(200)],
-        style: GoogleFonts.dmSans(fontSize: 14, color: AppColors.primary),
+        style: GoogleFonts.openSans(fontSize: 14, color: AppColors.primary),
         decoration: InputDecoration(
           hintText: 'Type your answer (a number or short expression)…',
-          hintStyle: GoogleFonts.dmSans(fontSize: 13, color: AppColors.textFaint),
+          hintStyle: GoogleFonts.openSans(fontSize: 13, color: AppColors.textFaint),
           filled: true,
           fillColor: const Color(0xFFF9FAFB),
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -1562,7 +1576,7 @@ class _MultiPartFieldsState extends State<_MultiPartFields> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(sp.prompt,
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.openSans(
                         fontSize: 13, color: const Color(0xFF374151), height: 1.4)),
                 const SizedBox(height: 6),
                 TextField(
@@ -1570,10 +1584,10 @@ class _MultiPartFieldsState extends State<_MultiPartFields> {
                   enabled: widget.enabled,
                   onChanged: (v) => widget.onChanged(sp.id, v),
                   inputFormatters: [LengthLimitingTextInputFormatter(80)],
-                  style: GoogleFonts.dmSans(fontSize: 13.5, color: AppColors.primary),
+                  style: GoogleFonts.openSans(fontSize: 13.5, color: AppColors.primary),
                   decoration: InputDecoration(
                     hintText: 'Part ${sp.id}) answer…',
-                    hintStyle: GoogleFonts.dmSans(fontSize: 12.5, color: AppColors.textFaint),
+                    hintStyle: GoogleFonts.openSans(fontSize: 12.5, color: AppColors.textFaint),
                     filled: true,
                     fillColor: const Color(0xFFF9FAFB),
                     contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1629,14 +1643,14 @@ class _HintBanner extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('HINT · LEVEL ${h['level']}',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                             fontSize: 9.5,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w600,
                             letterSpacing: 0.6,
                             color: const Color(0xFFB45309))),
                     const SizedBox(height: 3),
                     Text(h['hint_text']?.toString() ?? '',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                             fontSize: 12.5,
                             color: const Color(0xFF92400E),
                             height: 1.5)),
@@ -1680,7 +1694,7 @@ class _HintButton extends StatelessWidget {
               const Icon(Icons.lightbulb_outline, color: Color(0xFFF59E0B), size: 14),
             const SizedBox(width: 6),
             Text(nextLevel == 1 ? 'Hint' : 'Next hint (Lv $nextLevel)',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                     fontSize: 12.5,
                     fontWeight: FontWeight.w700,
                     color: const Color(0xFFB45309))),
@@ -1706,7 +1720,7 @@ class _ConfirmButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
         ),
         child: Text('Confirm',
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.openSans(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: Colors.white)),
@@ -1736,7 +1750,7 @@ class _SubmitBar extends StatelessWidget {
           children: [
             Text(
               '$answeredCount / $total answered',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                   fontSize: 13, color: const Color(0xFF6B7280)),
             ),
             const Spacer(),
@@ -2136,26 +2150,26 @@ class _ResultsView extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text('$pct%',
-                      style: GoogleFonts.dmSans(
-                          fontSize: 56, fontWeight: FontWeight.w900, height: 1,
+                      style: GoogleFonts.openSans(
+                          fontSize: 56, fontWeight: FontWeight.w600, height: 1,
                           color: pct >= 70 ? const Color(0xFF16A34A) : const Color(0xFFDC2626))),
                   const SizedBox(width: 14),
                   Text('$correct / $total correct',
-                      style: GoogleFonts.dmSans(fontSize: 14, color: AppColors.textFaint, fontWeight: FontWeight.w600)),
+                      style: GoogleFonts.openSans(fontSize: 14, color: AppColors.textFaint, fontWeight: FontWeight.w600)),
                 ],
               ),
               const SizedBox(height: 10),
               Text(
                 mastery ? '🎓 Mastery Achieved!' : pct >= 70 ? '🎯 Great Session!' : '📖 Keep Practising!',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w800, color: AppColors.primary),
+                style: GoogleFonts.openSans(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.primary),
               ),
               const SizedBox(height: 8),
               if (nextDate != null)
                 Text(
                   'Next review in $nextDays day${nextDays == 1 ? '' : 's'} · $nextDate',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(fontSize: 12.5, color: AppColors.accent, fontWeight: FontWeight.w600),
+                  style: GoogleFonts.openSans(fontSize: 12.5, color: AppColors.accent, fontWeight: FontWeight.w600),
                 ),
               if (timeoutCount > 0) ...[
                 const SizedBox(height: 10),
@@ -2167,7 +2181,7 @@ class _ResultsView extends StatelessWidget {
 
         const SizedBox(height: 18),
         Text('QUESTION REVIEW',
-            style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textFaint, letterSpacing: 1)),
+            style: GoogleFonts.openSans(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textFaint, letterSpacing: 1)),
         const SizedBox(height: 10),
 
         ...results.asMap().entries.map((e) => _ResultCard(index: e.key, result: e.value)),
@@ -2417,7 +2431,7 @@ class _ResultsNavButton extends StatelessWidget {
     return OutlinedButton.icon(
       onPressed: onTap,
       icon: Icon(icon, size: 18),
-      label: Text(label, style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 13)),
+      label: Text(label, style: GoogleFonts.openSans(fontWeight: FontWeight.w700, fontSize: 13)),
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.primary,
         padding: const EdgeInsets.symmetric(vertical: 14),
@@ -2441,7 +2455,7 @@ class _Chip extends StatelessWidget {
           borderRadius: BorderRadius.circular(20),
           border: Border.all(color: color.withOpacity(0.25)),
         ),
-        child: Text(label, style: GoogleFonts.dmSans(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+        child: Text(label, style: GoogleFonts.openSans(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
       );
 }
 
@@ -2490,13 +2504,13 @@ class _ResultCardState extends State<_ResultCard> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text('Q${widget.index + 1}. ${r.topic}',
-                            style: GoogleFonts.dmSans(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                            style: GoogleFonts.openSans(fontSize: 13.5, fontWeight: FontWeight.w700, color: AppColors.primary)),
                       ),
                       if (r.hintsUsed.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(right: 6),
                           child: Text('💡${r.hintsUsed.length}',
-                              style: GoogleFonts.dmSans(fontSize: 11, color: const Color(0xFFF59E0B))),
+                              style: GoogleFonts.openSans(fontSize: 11, color: const Color(0xFFF59E0B))),
                         ),
                       if (r.timedOut)
                         Padding(
@@ -2552,7 +2566,7 @@ class _ResultCardState extends State<_ResultCard> {
                               r.continuedAfterTimeout
                                   ? 'Timed out at ${r.timeAllottedSeconds}s — you continued for +${r.overtimeSeconds.toStringAsFixed(0)}s more'
                                   : 'Timed out at ${r.timeAllottedSeconds}s — moved on without finishing',
-                              style: GoogleFonts.dmSans(fontSize: 11.5, color: const Color(0xFFB91C1C), fontWeight: FontWeight.w600),
+                              style: GoogleFonts.openSans(fontSize: 11.5, color: const Color(0xFFB91C1C), fontWeight: FontWeight.w600),
                             ),
                           ),
                         ],
@@ -2562,12 +2576,12 @@ class _ResultCardState extends State<_ResultCard> {
                   ],
                   if (r.hintsUsed.isNotEmpty) ...[
                     Text('HINTS USED (${r.hintsUsed.length})',
-                        style: GoogleFonts.dmSans(fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.6, color: const Color(0xFFB45309))),
+                        style: GoogleFonts.openSans(fontSize: 9.5, fontWeight: FontWeight.w600, letterSpacing: 0.6, color: const Color(0xFFB45309))),
                     const SizedBox(height: 4),
                     ...r.hintsUsed.map((h) => Padding(
                           padding: const EdgeInsets.only(bottom: 4),
                           child: Text('Lv ${h['level']}: ${h['hint_text']}',
-                              style: GoogleFonts.dmSans(fontSize: 11.5, color: const Color(0xFF92400E), height: 1.4)),
+                              style: GoogleFonts.openSans(fontSize: 11.5, color: const Color(0xFF92400E), height: 1.4)),
                         )),
                     const SizedBox(height: 10),
                   ],
@@ -2586,13 +2600,13 @@ class _ResultCardState extends State<_ResultCard> {
                             const Icon(Icons.psychology_outlined, color: AppColors.accent, size: 15),
                             const SizedBox(width: 6),
                             Text('WHY',
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.openSans(
                                     color: AppColors.accent, fontSize: 10.5, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                           ],
                         ),
                         const SizedBox(height: 8),
                         Text(xai['xai_text'] as String? ?? '',
-                            style: GoogleFonts.dmSans(fontSize: 13, color: const Color(0xFF374151), height: 1.6)),
+                            style: GoogleFonts.openSans(fontSize: 13, color: const Color(0xFF374151), height: 1.6)),
                         if ((xai['review_topics'] as List?)?.isNotEmpty == true) ...[
                           const SizedBox(height: 10),
                           Wrap(
@@ -2605,7 +2619,7 @@ class _ResultCardState extends State<_ResultCard> {
                                         borderRadius: BorderRadius.circular(6),
                                         border: Border.all(color: const Color(0xFFBFDBFE)),
                                       ),
-                                      child: Text(t.toString(), style: GoogleFonts.dmSans(fontSize: 11, color: const Color(0xFF1D4ED8))),
+                                      child: Text(t.toString(), style: GoogleFonts.openSans(fontSize: 11, color: const Color(0xFF1D4ED8))),
                                     ))
                                 .toList(),
                           ),
@@ -2634,9 +2648,9 @@ class _AnswerBadge extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: TextStyle(color: color, fontSize: 9.5, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
+            Text(label, style: TextStyle(color: color, fontSize: 9.5, fontWeight: FontWeight.w600, letterSpacing: 0.8)),
             const SizedBox(height: 3),
-            Text(text, style: GoogleFonts.dmSans(fontSize: 12.5, color: AppColors.primary, fontWeight: FontWeight.w600)),
+            Text(text, style: GoogleFonts.openSans(fontSize: 12.5, color: AppColors.primary, fontWeight: FontWeight.w600)),
           ],
         ),
       );
@@ -2671,7 +2685,7 @@ class _NextReviewCard extends StatelessWidget {
               const Icon(Icons.event_available_outlined, color: Colors.white, size: 20),
               const SizedBox(width: 8),
               Text('Your Next Review',
-                  style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+                  style: GoogleFonts.openSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 15)),
             ],
           ),
           const SizedBox(height: 6),
@@ -2679,7 +2693,7 @@ class _NextReviewCard extends StatelessWidget {
             mastery
                 ? 'You\'ve mastered this topic — we\'ll check back with a light maintenance review.'
                 : 'Timed to when you\'re most likely to be about to forget this — reviewing now locks it in.',
-            style: GoogleFonts.dmSans(color: Colors.white.withOpacity(0.75), fontSize: 12.5, height: 1.5),
+            style: GoogleFonts.openSans(color: Colors.white.withOpacity(0.75), fontSize: 12.5, height: 1.5),
           ),
           const SizedBox(height: 16),
           Container(
@@ -2699,9 +2713,9 @@ class _NextReviewCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text('In $nextDays day${nextDays == 1 ? '' : 's'}',
-                          style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                          style: GoogleFonts.openSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16)),
                       if (nextDate != null)
-                        Text(nextDate!, style: GoogleFonts.dmSans(color: Colors.white.withOpacity(0.65), fontSize: 12)),
+                        Text(nextDate!, style: GoogleFonts.openSans(color: Colors.white.withOpacity(0.65), fontSize: 12)),
                     ],
                   ),
                 ),
@@ -2710,7 +2724,7 @@ class _NextReviewCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
           Text('We\'ll also remind you on your dashboard when it\'s time.',
-              style: GoogleFonts.dmSans(color: Colors.white.withOpacity(0.55), fontSize: 11)),
+              style: GoogleFonts.openSans(color: Colors.white.withOpacity(0.55), fontSize: 11)),
         ],
       ),
     );

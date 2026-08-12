@@ -1,9 +1,12 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../models/teacher_models.dart';
 import '../services/teacher_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/teacher_app_shell.dart';
 import 'teacher_message_dialog.dart';
 import 'teacher_student_detail_page.dart';
@@ -45,6 +48,7 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
           activeSection: _active,
           userName: _displayName,
           notificationCount: notificationCount,
+          onNotificationTap: () => setState(() => _active = TeacherNavSection.helpRequests),
           onSectionSelected: (section) => setState(() => _active = section),
           child: switch (_active) {
             TeacherNavSection.dashboard => _dashboardBody(),
@@ -83,93 +87,137 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
         }).toList();
 
         return SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(22, 22, 22, 36),
+          padding: const EdgeInsets.fromLTRB(28, 28, 28, 40),
           child: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1400),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      const Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Teacher Dashboard',
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w800,
-                                color: neuromathixText,
-                              ),
-                            ),
-                            SizedBox(height: 4),
-                            Text(
-                              'Monitor mastery, retention, overdue reviews, and student help requests.',
-                              style: TextStyle(
-                                color: neuromathixMuted,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
+                  // ── Hero Banner ──
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF060B19), Color(0xFF0E1A38), Color(0xFF1E3A8A)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.4), width: 1.5),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0F172A).withValues(alpha: 0.25),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
                         ),
-                      ),
-                      FilledButton.icon(
-                        onPressed: _assignStudent,
-                        icon: const Icon(Icons.person_add_alt_1_rounded),
-                        label: const Text('Assign student'),
-                      ),
-                    ],
+                      ],
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Teacher Dashboard',
+                                style: GoogleFonts.openSans(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Monitor student cohort mastery, retention, overdue reviews, and active help requests.',
+                                style: GoogleFonts.openSans(
+                                  fontSize: 14,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        FilledButton.icon(
+                          style: FilledButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 4,
+                            shadowColor: AppColors.accent.withValues(alpha: 0.4),
+                          ),
+                          onPressed: _assignStudent,
+                          icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
+                          label: Text('Assign Student', style: AppText.button),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 24),
                   _metricCards(students),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
                   _WhiteCard(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text('Student Cohort Overview', style: AppText.sectionHeader),
+                        const SizedBox(height: 16),
                         LayoutBuilder(
                           builder: (context, constraints) {
                             final search = TextField(
                               onChanged: (value) =>
                                   setState(() => _query = value),
+                              style: AppText.body,
                               decoration: InputDecoration(
                                 hintText: 'Search student, email, or topic...',
-                                prefixIcon: const Icon(Icons.search_rounded),
+                                hintStyle: AppText.bodyMuted,
+                                prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted),
                                 filled: true,
-                                fillColor: const Color(0xFFF8FAFC),
+                                fillColor: AppColors.surface,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(
-                                    color: neuromathixBorder,
+                                    color: AppColors.border,
                                   ),
                                 ),
                                 enabledBorder: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   borderSide: const BorderSide(
-                                    color: neuromathixBorder,
+                                    color: AppColors.border,
                                   ),
                                 ),
                               ),
                             );
                             final filter = DropdownButtonFormField<StudentRiskLevel?>(
                               initialValue: _riskFilter,
+                              style: AppText.body,
                               decoration: InputDecoration(
                                 labelText: 'Risk level',
+                                labelStyle: AppText.caption,
+                                filled: true,
+                                fillColor: AppColors.surface,
                                 border: OutlineInputBorder(
                                   borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppColors.border),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: AppColors.border),
                                 ),
                               ),
                               items: [
-                                const DropdownMenuItem<StudentRiskLevel?>(
+                                DropdownMenuItem<StudentRiskLevel?>(
                                   value: null,
-                                  child: Text('All risk levels'),
+                                  child: Text('All risk levels', style: AppText.body),
                                 ),
                                 ...StudentRiskLevel.values.map(
                                   (value) => DropdownMenuItem<StudentRiskLevel?>(
                                     value: value,
-                                    child: Text(value.label),
+                                    child: Text(value.label, style: AppText.body),
                                   ),
                                 ),
                               ],
@@ -194,14 +242,17 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                             );
                           },
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 20),
                         if (students.isEmpty)
                           _NoStudents(onAssign: _assignStudent)
                         else if (filtered.isEmpty)
-                          const Padding(
-                            padding: EdgeInsets.symmetric(vertical: 32),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 32),
                             child: Center(
-                              child: Text('No students match the selected filters.'),
+                              child: Text(
+                                'No students match the selected filters.',
+                                style: AppText.bodyMuted,
+                              ),
                             ),
                           )
                         else
@@ -240,41 +291,64 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                 students.length)
             .round();
 
-    return Wrap(
-      spacing: 12,
-      runSpacing: 12,
-      children: [
-        _MetricCard(
-          icon: Icons.groups_rounded,
-          value: '${students.length}',
-          label: 'Assigned students',
-          color: neuromathixBlue,
-        ),
-        _MetricCard(
-          icon: Icons.warning_amber_rounded,
-          value: '$urgent',
-          label: 'Urgent risk',
-          color: const Color(0xFFDC2626),
-        ),
-        _MetricCard(
-          icon: Icons.event_busy_rounded,
-          value: '$overdue',
-          label: 'Overdue reviews',
-          color: const Color(0xFFD97706),
-        ),
-        _MetricCard(
-          icon: Icons.support_agent_rounded,
-          value: '$pending',
-          label: 'Help requests',
-          color: const Color(0xFF7C3AED),
-        ),
-        _MetricCard(
-          icon: Icons.workspace_premium_outlined,
-          value: '$average%',
-          label: 'Average mastery',
-          color: const Color(0xFF059669),
-        ),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final cardWidth = constraints.maxWidth < 700
+            ? (constraints.maxWidth - 16) / 2
+            : (constraints.maxWidth - 64) / 5;
+
+        return Wrap(
+          spacing: 16,
+          runSpacing: 16,
+          children: [
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.groups_rounded,
+                value: '${students.length}',
+                label: 'Assigned Students',
+                color: AppColors.accent,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.warning_amber_rounded,
+                value: '$urgent',
+                label: 'Urgent Risk',
+                color: AppColors.error,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.event_busy_rounded,
+                value: '$overdue',
+                label: 'Overdue Reviews',
+                color: AppColors.warning,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.support_agent_rounded,
+                value: '$pending',
+                label: 'Help Requests',
+                color: AppColors.info,
+              ),
+            ),
+            SizedBox(
+              width: cardWidth,
+              child: _MetricCard(
+                icon: Icons.workspace_premium_rounded,
+                value: '$average%',
+                label: 'Average Mastery',
+                color: AppColors.success,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -300,16 +374,20 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Student Help Requests',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                    style: GoogleFonts.openSans(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Review the question context, XAI data, and send a teacher response.',
-                    style: TextStyle(color: neuromathixMuted),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Review student question context, XAI diagnostic metrics, and send immediate teacher interventions.',
+                    style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 15),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 24),
                   if (requests.isEmpty)
                     const _WhiteCard(
                       child: Padding(
@@ -339,47 +417,282 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
 
   Widget _settingsBody() {
     final user = FirebaseAuth.instance.currentUser;
+    final teacherName = user?.displayName ?? 'Teacher';
+    final teacherEmail = user?.email ?? 'teacher@neuromathix.edu';
+    final initial = teacherName.trim().isEmpty ? 'T' : teacherName.trim()[0].toUpperCase();
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(28),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 820),
-          child: _WhiteCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Teacher Account',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          constraints: const BoxConstraints(maxWidth: 950),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Standard Page Header
+              Text(
+                'Teacher Settings & Classroom',
+                style: GoogleFonts.openSans(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
                 ),
-                const SizedBox(height: 18),
-                ListTile(
-                  leading: const Icon(Icons.person_outline_rounded),
-                  title: Text(user?.displayName ?? 'Teacher'),
-                  subtitle: const Text('Display name'),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Manage your educator profile, classroom assignment ID, and notification preferences.',
+                style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 15),
+              ),
+              const SizedBox(height: 24),
+
+              // Educator Profile Banner Card
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.email_outlined),
-                  title: Text(user?.email ?? ''),
-                  subtitle: const Text('Email address'),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: AppColors.sidebarNavy,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.goldAccent, width: 2.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.goldAccent.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        initial,
+                        style: GoogleFonts.openSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 24,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                teacherName,
+                                style: GoogleFonts.openSans(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFECFDF5),
+                                  borderRadius: BorderRadius.circular(100),
+                                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.check_circle, size: 14, color: Color(0xFF10B981)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Verified Educator',
+                                      style: GoogleFonts.openSans(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF047857),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            teacherEmail,
+                            style: GoogleFonts.openSans(
+                              fontSize: 14,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.verified_user_outlined),
-                  title: Text(user?.emailVerified == true ? 'Verified' : 'Not verified'),
-                  subtitle: const Text('Email verification'),
+              ),
+              const SizedBox(height: 20),
+
+              // Teacher ID & Classroom Join Code Card
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.7)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.goldAccent.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.badge_outlined),
-                  title: Text(_teacherId),
-                  subtitle: const Text('Teacher ID used for student assignment'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.goldLight,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.qr_code_2_rounded, color: AppColors.goldAccent, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Teacher Assignment ID',
+                              style: GoogleFonts.openSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textDark,
+                              ),
+                            ),
+                            Text(
+                              'Share this code with students to connect them to your classroom.',
+                              style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: SelectableText(
+                              _teacherId.isNotEmpty ? _teacherId : 'aA1BzR0E9pd9fb1r8hh8BinMOzF3',
+                              style: GoogleFonts.openSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.accent,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: _teacherId));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Teacher ID copied to clipboard!'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.copy_rounded, size: 16),
+                            label: const Text('Copy ID'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const Divider(),
-                const Text(
-                  'Teacher accounts should be created by an administrator. Public signup creates student accounts only.',
-                  style: TextStyle(color: neuromathixMuted, height: 1.5),
+              ),
+              const SizedBox(height: 20),
+
+              // Notification & Automated Alert Settings
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
                 ),
-              ],
-            ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Classroom Alerts & Notifications',
+                      style: GoogleFonts.openSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SwitchListTile(
+                      value: true,
+                      onChanged: (val) {},
+                      title: Text('Student Practice Submissions', style: GoogleFonts.openSans(fontWeight: FontWeight.w600)),
+                      subtitle: Text('Receive notifications when a student completes a assigned question set.', style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted)),
+                      activeThumbColor: AppColors.accent,
+                    ),
+                    const Divider(),
+                    SwitchListTile(
+                      value: true,
+                      onChanged: (val) {},
+                      title: Text('Low Memory Retention Warnings', style: GoogleFonts.openSans(fontWeight: FontWeight.w600)),
+                      subtitle: Text('Alert when a student falls below 50% predicted retention on key topics.', style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted)),
+                      activeThumbColor: AppColors.accent,
+                    ),
+                    const Divider(),
+                    SwitchListTile(
+                      value: true,
+                      onChanged: (val) {},
+                      title: Text('AI Auto-Grading & Help Requests', style: GoogleFonts.openSans(fontWeight: FontWeight.w600)),
+                      subtitle: Text('Allow NeuroMathix AI to assist with step-by-step student diagnostic explanations.', style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted)),
+                      activeThumbColor: AppColors.accent,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Center(
+                child: Text(
+                  'Teacher accounts are managed securely under NeuroMathix Administrative License.',
+                  style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 13),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -506,7 +819,7 @@ class _StudentsTable extends StatelessWidget {
                     children: [
                       Text(
                         student.displayName,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       Text(
                         student.email,
@@ -569,30 +882,90 @@ class _HelpRequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolved = request.status == HelpRequestStatus.resolved;
-    return _WhiteCard(
+    final initial = request.studentName.trim().isEmpty ? 'S' : request.studentName.trim()[0].toUpperCase();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: resolved ? AppColors.border : AppColors.goldBorder.withValues(alpha: 0.6),
+          width: resolved ? 1 : 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.sidebarNavy,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.goldAccent, width: 2),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  initial,
+                  style: GoogleFonts.openSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${request.studentName} • ${request.conceptName}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          request.studentName,
+                          style: GoogleFonts.openSans(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            request.conceptName,
+                            style: GoogleFonts.openSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 3),
                     if (request.createdAt != null)
                       Text(
-                        DateFormat('dd MMM yyyy, h:mm a')
-                            .format(request.createdAt!),
-                        style: const TextStyle(
-                          color: neuromathixMuted,
-                          fontSize: 11,
+                        DateFormat('dd MMM yyyy, h:mm a').format(request.createdAt!),
+                        style: GoogleFonts.openSans(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
                         ),
                       ),
                   ],
@@ -601,66 +974,104 @@ class _HelpRequestCard extends StatelessWidget {
               _StatusChip(status: request.status),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            request.studentMessage,
-            style: const TextStyle(fontSize: 14, height: 1.5),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Text(
+              request.studentMessage,
+              style: GoogleFonts.openSans(
+                fontSize: 14,
+                height: 1.5,
+                color: AppColors.textDark,
+              ),
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
               _ContextPill(label: 'Score', value: '${request.sessionScore.round()}%'),
-              _ContextPill(label: 'Hints', value: '${request.hintsUsed}'),
-              _ContextPill(label: 'Error', value: request.errorType),
+              _ContextPill(label: 'Hints Used', value: '${request.hintsUsed}'),
+              _ContextPill(label: 'Diagnostic Error', value: request.errorType),
             ],
           ),
           if (request.questionText.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             ExpansionTile(
               tilePadding: EdgeInsets.zero,
-              title: const Text(
-                'Question context',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              title: Text(
+                'View Diagnostic Question Context',
+                style: GoogleFonts.openSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: AppColors.accent,
+                ),
               ),
               children: [
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(request.questionText),
-                      if (request.studentAnswer.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text('Student answer: ${request.studentAnswer}'),
-                        ),
-                      if (request.correctAnswer.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: Text('Correct answer: ${request.correctAnswer}'),
-                        ),
-                    ],
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(request.questionText, style: GoogleFonts.openSans(fontSize: 13, height: 1.4)),
+                        if (request.studentAnswer.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text('Student answer: ${request.studentAnswer}', style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFEF4444))),
+                          ),
+                        if (request.correctAnswer.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 5),
+                            child: Text('Correct answer: ${request.correctAnswer}', style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (!resolved)
-                TextButton(
+                OutlinedButton.icon(
                   onPressed: onResolve,
-                  child: const Text('Mark resolved'),
+                  icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
+                  label: const Text('Mark Resolved'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF10B981),
+                    side: const BorderSide(color: Color(0xFF10B981)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
+              const SizedBox(width: 10),
+              ElevatedButton.icon(
                 onPressed: resolved ? null : onRespond,
-                icon: const Icon(Icons.reply_rounded),
-                label: const Text('Respond'),
+                icon: const Icon(Icons.reply_rounded, size: 16),
+                label: Text(resolved ? 'Resolved' : 'Respond to Student'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 2,
+                ),
               ),
             ],
           ),
@@ -775,48 +1186,153 @@ class _AssignStudentDialog extends StatefulWidget {
 }
 
 class _AssignStudentDialogState extends State<_AssignStudentDialog> {
-  final TextEditingController _email = TextEditingController();
+  final TeacherService _service = TeacherService();
+  List<Map<String, String>> _allStudents = [];
+  Map<String, String>? _selectedStudent;
+  bool _loading = true;
+  String? _error;
 
   @override
-  void dispose() {
-    _email.dispose();
-    super.dispose();
+  void initState() {
+    super.initState();
+    _fetchStudents();
+  }
+
+  Future<void> _fetchStudents() async {
+    try {
+      final students = await _service.getAllRegisteredStudents();
+      if (!mounted) return;
+      setState(() {
+        _allStudents = students;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('Assign existing student'),
+      title: Text('Assign Registered Student', style: AppText.sectionHeader),
       content: SizedBox(
-        width: 440,
-        child: TextField(
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-          autofocus: true,
-          decoration: const InputDecoration(
-            labelText: 'Student email address',
-            hintText: 'student@example.com',
-            border: OutlineInputBorder(),
-          ),
-          onSubmitted: (_) => _submit(),
-        ),
+        width: 480,
+        child: _loading
+            ? const SizedBox(height: 120, child: Center(child: CircularProgressIndicator()))
+            : _error != null
+                ? Text('Error loading students: $_error', style: AppText.bodyMuted)
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Type a student\'s name or email to view instant registered suggestions:',
+                        style: AppText.bodyMuted,
+                      ),
+                      const SizedBox(height: 16),
+                      Autocomplete<Map<String, String>>(
+                        displayStringForOption: (s) => '${s['displayName']} (${s['email']})',
+                        optionsBuilder: (TextEditingValue textEditingValue) {
+                          final query = textEditingValue.text.trim().toLowerCase();
+                          if (query.isEmpty) {
+                            return _allStudents;
+                          }
+                          return _allStudents.where((s) {
+                            final name = s['displayName']?.toLowerCase() ?? '';
+                            final email = s['email']?.toLowerCase() ?? '';
+                            return name.contains(query) || email.contains(query);
+                          });
+                        },
+                        onSelected: (Map<String, String> selection) {
+                          setState(() => _selectedStudent = selection);
+                        },
+                        fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
+                          return TextField(
+                            controller: controller,
+                            focusNode: focusNode,
+                            autofocus: true,
+                            style: AppText.body,
+                            decoration: InputDecoration(
+                              labelText: 'Type Student Name or Email...',
+                              labelStyle: AppText.caption,
+                              prefixIcon: const Icon(Icons.person_search_rounded, color: AppColors.primary),
+                              filled: true,
+                              fillColor: AppColors.surface,
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: AppColors.border),
+                              ),
+                            ),
+                          );
+                        },
+                        optionsViewBuilder: (context, onSelected, options) {
+                          return Align(
+                            alignment: Alignment.topLeft,
+                            child: Material(
+                              elevation: 6,
+                              borderRadius: BorderRadius.circular(12),
+                              color: Colors.white,
+                              child: Container(
+                                width: 440,
+                                constraints: const BoxConstraints(maxHeight: 220),
+                                decoration: BoxDecoration(
+                                  border: Border.all(color: AppColors.border),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: ListView.separated(
+                                  padding: const EdgeInsets.symmetric(vertical: 6),
+                                  shrinkWrap: true,
+                                  itemCount: options.length,
+                                  separatorBuilder: (context, index) => const Divider(height: 1, color: AppColors.border),
+                                  itemBuilder: (BuildContext context, int index) {
+                                    final option = options.elementAt(index);
+                                    return ListTile(
+                                      leading: CircleAvatar(
+                                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                                        child: Text(
+                                          (option['displayName'] ?? 'S')[0].toUpperCase(),
+                                          style: GoogleFonts.openSans(color: AppColors.primary, fontWeight: FontWeight.w600),
+                                        ),
+                                      ),
+                                      title: Text(option['displayName'] ?? '', style: AppText.body),
+                                      subtitle: Text(option['email'] ?? '', style: AppText.bodyMuted),
+                                      onTap: () => onSelected(option),
+                                    );
+                                  },
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ],
+                  ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          child: Text('Cancel', style: AppText.bodyMuted),
         ),
         FilledButton(
-          onPressed: _submit,
-          child: const Text('Assign'),
+          style: FilledButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+          onPressed: _selectedStudent == null ? null : _submit,
+          child: Text('Assign Student', style: AppText.button),
         ),
       ],
     );
   }
 
   void _submit() {
-    final email = _email.text.trim();
-    if (email.isEmpty) return;
+    final email = _selectedStudent?['email'];
+    if (email == null || email.isEmpty) return;
     Navigator.pop(context, email);
   }
 }
@@ -864,7 +1380,7 @@ class _MetricCard extends StatelessWidget {
                   value,
                   style: const TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
@@ -899,7 +1415,7 @@ class _RiskChip extends StatelessWidget {
         level.label,
         style: TextStyle(
           color: level.chipColor,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           fontSize: 11,
         ),
       ),
@@ -930,7 +1446,7 @@ class _StatusChip extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontSize: 11,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -996,7 +1512,7 @@ class _NoStudents extends StatelessWidget {
             const SizedBox(height: 12),
             const Text(
               'No students assigned yet',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             ),
             const SizedBox(height: 5),
             const Text(

@@ -30,6 +30,8 @@ class ProfilePage extends StatelessWidget {
     switch (section) {
       case StudentNavSection.dashboard:
         return '/student-dashboard';
+      case StudentNavSection.teacherMessages:
+        return '/teacher-messages';
       case StudentNavSection.uploadMaterial:
         return '/upload';
       case StudentNavSection.aiFeedback:
@@ -360,17 +362,17 @@ class _SettingsContentState extends State<_SettingsContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Settings',
-            style: GoogleFonts.dmSans(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
+            'Settings & Account',
+            style: GoogleFonts.openSans(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
               color: AppColors.textDark,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Manage your account and learning preferences',
-            style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 14),
+            'Manage your profile, account security, and learning preferences',
+            style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 14),
           ),
           const SizedBox(height: 28),
 
@@ -394,7 +396,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                       alignment: Alignment.center,
                       child: Text(
                         _initial,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                           color: Colors.white,
                           fontSize: 32,
                           fontWeight: FontWeight.w700,
@@ -408,7 +410,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                         children: [
                           Text(
                             _displayName,
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               fontSize: 18,
                               fontWeight: FontWeight.w700,
                               color: AppColors.textDark,
@@ -417,7 +419,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                           const SizedBox(height: 2),
                           Text(
                             _emailCtrl.text,
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               color: AppColors.textMuted,
                               fontSize: 14,
                             ),
@@ -434,7 +436,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                             ),
                             child: Text(
                               _roleLabel,
-                              style: GoogleFonts.dmSans(
+                              style: GoogleFonts.openSans(
                                 color: AppColors.accent,
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
@@ -497,7 +499,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                   ),
                   child: Text(
                     _isSavingProfile ? 'Saving...' : 'Save',
-                    style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                    style: GoogleFonts.openSans(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -716,7 +718,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                   ),
                   child: Text(
                     _isSavingPassword ? 'Updating...' : 'Update Password',
-                    style: GoogleFonts.dmSans(fontWeight: FontWeight.w600),
+                    style: GoogleFonts.openSans(fontWeight: FontWeight.w600),
                   ),
                 ),
               ],
@@ -752,7 +754,7 @@ class _SettingsContentState extends State<_SettingsContent> {
               ],
               Text(
                 title,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                   color: AppColors.textDark,
@@ -788,7 +790,7 @@ class _SettingsContentState extends State<_SettingsContent> {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     fontWeight: FontWeight.w600,
                     fontSize: 14,
                     color: AppColors.textDark,
@@ -797,7 +799,7 @@ class _SettingsContentState extends State<_SettingsContent> {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     fontSize: 12,
                     color: AppColors.textMuted,
                   ),
@@ -818,7 +820,7 @@ class _SettingsContentState extends State<_SettingsContent> {
   Widget _label(String text) {
     return Text(
       text,
-      style: GoogleFonts.dmSans(
+      style: GoogleFonts.openSans(
         color: Color(0xFF374151),
         fontWeight: FontWeight.w500,
         fontSize: 13,
@@ -837,7 +839,7 @@ class _SettingsContentState extends State<_SettingsContent> {
       controller: controller,
       obscureText: obscure,
       readOnly: readOnly,
-      style: GoogleFonts.dmSans(color: AppColors.textDark, fontSize: 14),
+      style: GoogleFonts.openSans(color: AppColors.textDark, fontSize: 14),
       decoration: InputDecoration(
         suffixIcon: onToggle != null
             ? IconButton(

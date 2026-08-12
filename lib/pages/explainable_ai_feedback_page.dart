@@ -99,6 +99,8 @@ class ExplainableAiFeedbackPage extends StatelessWidget {
     switch (section) {
       case StudentNavSection.dashboard:
         return '/student-dashboard';
+      case StudentNavSection.teacherMessages:
+        return '/teacher-messages';
       case StudentNavSection.uploadMaterial:
         return '/upload';
       case StudentNavSection.aiFeedback:
@@ -205,7 +207,7 @@ class _SessionHistoryBrowserState extends State<_SessionHistoryBrowser> {
                 child: TextButton.icon(
                   onPressed: () => setState(() => _selectedSessionId = null),
                   icon: const Icon(Icons.arrow_back, size: 16),
-                  label: Text('All sessions', style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+                  label: Text('All sessions', style: GoogleFonts.openSans(fontWeight: FontWeight.w700)),
                   style: TextButton.styleFrom(foregroundColor: neuromathixText),
                 ),
               ),
@@ -231,10 +233,10 @@ class _SessionHistoryBrowserState extends State<_SessionHistoryBrowser> {
         return ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            Text('Your Session Feedback', style: GoogleFonts.dmSans(fontSize: 24, fontWeight: FontWeight.w900, color: neuromathixText)),
+            Text('Your Session Feedback', style: GoogleFonts.openSans(fontSize: 24, fontWeight: FontWeight.w600, color: neuromathixText)),
             const SizedBox(height: 4),
             Text('Pick a past session to see its real, detailed AI feedback.',
-                style: GoogleFonts.dmSans(fontSize: 14, color: neuromathixMuted)),
+                style: GoogleFonts.openSans(fontSize: 14, color: neuromathixMuted)),
             const SizedBox(height: 20),
             ...sessions.map((s) => _SessionHistoryCard(session: s, onTap: () => _select(s['session_id'] as String))),
           ],
@@ -248,7 +250,7 @@ class _SessionHistoryBrowserState extends State<_SessionHistoryBrowser> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(message, style: GoogleFonts.dmSans(color: neuromathixMuted)),
+          Text(message, style: GoogleFonts.openSans(color: neuromathixMuted)),
           const SizedBox(height: 12),
           TextButton(onPressed: onBack, child: const Text('Back')),
         ],
@@ -280,7 +282,7 @@ class _NoSessionsYetState extends StatelessWidget {
             const SizedBox(height: 14),
             Text(
               hasError ? "Couldn't reach the server" : 'No AI feedback yet',
-              style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w800, color: neuromathixText),
+              style: GoogleFonts.openSans(fontSize: 18, fontWeight: FontWeight.w600, color: neuromathixText),
             ),
             const SizedBox(height: 8),
             Text(
@@ -288,13 +290,13 @@ class _NoSessionsYetState extends StatelessWidget {
                   ? 'Check your connection and try again in a moment.'
                   : 'Complete a learning session to see detailed, session-specific AI feedback here.',
               textAlign: TextAlign.center,
-              style: GoogleFonts.dmSans(fontSize: 13.5, color: neuromathixMuted, height: 1.5),
+              style: GoogleFonts.openSans(fontSize: 13.5, color: neuromathixMuted, height: 1.5),
             ),
             const SizedBox(height: 18),
             OutlinedButton.icon(
               onPressed: () => Navigator.pushNamed(context, '/upload'),
               icon: const Icon(Icons.upload_file_outlined, size: 16),
-              label: Text('Upload Material', style: GoogleFonts.dmSans(fontWeight: FontWeight.w700)),
+              label: Text('Upload Material', style: GoogleFonts.openSans(fontWeight: FontWeight.w700)),
             ),
           ],
         ),
@@ -342,7 +344,7 @@ class _SessionHistoryCard extends StatelessWidget {
               height: 48,
               alignment: Alignment.center,
               decoration: BoxDecoration(color: scoreColor.withValues(alpha: 0.12), shape: BoxShape.circle),
-              child: Text('$score%', style: GoogleFonts.dmSans(color: scoreColor, fontWeight: FontWeight.w800, fontSize: 12)),
+              child: Text('$score%', style: GoogleFonts.openSans(color: scoreColor, fontWeight: FontWeight.w600, fontSize: 12)),
             ),
             const SizedBox(width: 14),
             Expanded(
@@ -351,7 +353,7 @@ class _SessionHistoryCard extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Flexible(child: Text(filename, style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, color: neuromathixText), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      Flexible(child: Text(filename, style: GoogleFonts.openSans(fontWeight: FontWeight.w700, color: neuromathixText), maxLines: 1, overflow: TextOverflow.ellipsis)),
                       if (mastered) ...[
                         const SizedBox(width: 6),
                         const Icon(Icons.workspace_premium, size: 14, color: Color(0xFFF59E0B)),
@@ -361,7 +363,7 @@ class _SessionHistoryCard extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     'Session ${session['session_number']} · $dateLabel${topics.isNotEmpty ? ' · ${topics.join(', ')}' : ''}',
-                    style: GoogleFonts.dmSans(fontSize: 12, color: neuromathixMuted),
+                    style: GoogleFonts.openSans(fontSize: 12, color: neuromathixMuted),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -408,16 +410,16 @@ class _FeedbackContent extends StatelessWidget {
                 const SizedBox(height: 34),
                 Text(
                   'Question-by-Question Feedback',
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     fontSize: 24,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                     color: neuromathixText,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   'Every question in this session, explained individually — not just the one below.',
-                  style: GoogleFonts.dmSans(fontSize: 14, color: neuromathixMuted),
+                  style: GoogleFonts.openSans(fontSize: 14, color: neuromathixMuted),
                 ),
                 const SizedBox(height: 18),
                 _QuestionFeedbackList(items: data.questionFeedback),
@@ -425,9 +427,9 @@ class _FeedbackContent extends StatelessWidget {
               const SizedBox(height: 34),
               Text(
                 'Key Factors Analysis',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   fontSize: 24,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   color: neuromathixText,
                 ),
               ),
@@ -443,17 +445,51 @@ class _FeedbackContent extends StatelessWidget {
   }
 
   Future<void> _showReport(BuildContext context, AiFeedbackData data) async {
-    final report = await service.buildFeedbackReport(
-      studentId: data.studentId,
-      feedbackId: data.id,
-    );
+    try {
+      final rows = data.reportRows.isNotEmpty
+          ? data.reportRows
+          : [
+              ReportMetricRow(
+                metric: 'Current Memory Retention',
+                value: '${data.currentRetentionPercent}%',
+                interpretation: data.headline,
+                recommendation: data.summary,
+              ),
+              ReportMetricRow(
+                metric: 'Predicted Decline without Review',
+                value: '-${data.declinePercent}%',
+                interpretation: 'Memory strength decays along the Ebbinghaus curve if un-reviewed.',
+                recommendation: 'Complete scheduled review within ${data.nextReviewDays ?? 1} day(s).',
+              ),
+              ReportMetricRow(
+                metric: 'Post-Review Recovery Target',
+                value: '+${data.recoveryRetentionPercent}%',
+                interpretation: 'Timely review restores memory retention to optimal mastery.',
+                recommendation: 'Follow the personalized forgetting curve schedule.',
+              ),
+            ];
 
-    if (!context.mounted) return;
+      final report = FeedbackReport(
+        title: 'NeuroMathix AI Learning Report — ${data.conceptTitle}',
+        generatedFor: FirebaseAuth.instance.currentUser?.displayName ??
+            FirebaseAuth.instance.currentUser?.email?.split('@').first ??
+            'Chamika',
+        generatedAt: DateTime.now(),
+        rows: rows,
+      );
 
-    showDialog<void>(
-      context: context,
-      builder: (context) => _ReportDialog(report: report),
-    );
+      if (!context.mounted) return;
+
+      showDialog<void>(
+        context: context,
+        builder: (context) => _ReportDialog(report: report),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not generate report: $e')),
+      );
+    }
   }
 }
 
@@ -471,37 +507,37 @@ class _Breadcrumbs extends StatelessWidget {
       children: [
         Text(
           'Home',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixMuted,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
         Text(
           '/',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixMuted,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
         Text(
           data.courseTitle,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixMuted,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
         Text(
           '/',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixMuted,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
           ),
         ),
         Text(
           data.conceptTitle,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixText,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
           ),
         ),
       ],
@@ -532,9 +568,9 @@ class _FeedbackHeader extends StatelessWidget {
               ),
               child: Text(
                 data.badgeLabel,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   color: neuromathixBlue,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: 1.4,
                   fontSize: 13,
                 ),
@@ -543,10 +579,10 @@ class _FeedbackHeader extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               data.headline,
-              style: GoogleFonts.dmSans(
-                fontSize: 36,
-                fontWeight: FontWeight.w900,
-                color: neuromathixText,
+              style: GoogleFonts.openSans(
+                fontSize: 26,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textDark,
               ),
             ),
             const SizedBox(height: 8),
@@ -554,7 +590,7 @@ class _FeedbackHeader extends StatelessWidget {
               constraints: const BoxConstraints(maxWidth: 760),
               child: Text(
                 data.summary,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   fontSize: 17,
                   color: neuromathixMuted,
                   height: 1.35,
@@ -590,7 +626,7 @@ class _FeedbackHeader extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                textStyle: GoogleFonts.dmSans(fontWeight: FontWeight.w900),
+                textStyle: GoogleFonts.openSans(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -661,10 +697,10 @@ class _RetentionSummary extends StatelessWidget {
       children: [
         Text(
           'RIGHT AFTER THIS SESSION',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixMuted,
             fontSize: 16,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
             letterSpacing: 1.5,
           ),
         ),
@@ -676,9 +712,9 @@ class _RetentionSummary extends StatelessWidget {
           children: [
             Text(
               '${data.currentRetentionPercent}%',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                 fontSize: 48,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
                 color: neuromathixText,
               ),
             ),
@@ -688,10 +724,10 @@ class _RetentionSummary extends StatelessWidget {
             // simultaneous with the 100% above it.
             Text(
               '↓${data.declinePercent}% predicted by next review',
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                 color: Color(0xFFFF414D),
                 fontSize: 16,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -699,7 +735,7 @@ class _RetentionSummary extends StatelessWidget {
         const SizedBox(height: 10),
         Text(
           data.retentionDescription,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixMuted,
             fontSize: 15,
             height: 1.35,
@@ -731,16 +767,16 @@ class _RetentionSummary extends StatelessWidget {
                   children: [
                     Text(
                       'Optimal Review Window',
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.openSans(
                         fontSize: 17,
-                        fontWeight: FontWeight.w900,
+                        fontWeight: FontWeight.w600,
                         color: neuromathixText,
                       ),
                     ),
                     const SizedBox(height: 16),
                     Text.rich(
                       TextSpan(
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                           color: neuromathixMuted,
                           fontSize: 15,
                           height: 1.35,
@@ -753,9 +789,9 @@ class _RetentionSummary extends StatelessWidget {
                           ),
                           TextSpan(
                             text: '${data.recoveryRetentionPercent}%',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               color: neuromathixBlue,
-                              fontWeight: FontWeight.w900,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                           const TextSpan(
@@ -818,9 +854,9 @@ class _SchedulingExplanationCardState extends State<_SchedulingExplanationCard> 
               const SizedBox(width: 10),
               Text(
                 'How we calculated your next review',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   fontSize: 19,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   color: neuromathixText,
                 ),
               ),
@@ -829,7 +865,7 @@ class _SchedulingExplanationCardState extends State<_SchedulingExplanationCard> 
           const SizedBox(height: 4),
           Text(
             'Every input below came from this session — nothing here is a fixed schedule.',
-            style: GoogleFonts.dmSans(fontSize: 13, color: neuromathixMuted),
+            style: GoogleFonts.openSans(fontSize: 13, color: neuromathixMuted),
           ),
           const SizedBox(height: 20),
           for (var i = 0; i < data.schedulingFactors.length; i++)
@@ -860,16 +896,16 @@ class _SchedulingExplanationCardState extends State<_SchedulingExplanationCard> 
                             children: [
                               Text(
                                 data.schedulingFactors[i].title,
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.openSans(
                                   fontSize: 14,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                   color: neuromathixText,
                                 ),
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 data.schedulingFactors[i].value,
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.openSans(
                                   fontSize: 13,
                                   fontWeight: FontWeight.w700,
                                   color: neuromathixBlue,
@@ -880,7 +916,7 @@ class _SchedulingExplanationCardState extends State<_SchedulingExplanationCard> 
                           const SizedBox(height: 2),
                           Text(
                             data.schedulingFactors[i].description,
-                            style: GoogleFonts.dmSans(fontSize: 12.5, color: neuromathixMuted, height: 1.4),
+                            style: GoogleFonts.openSans(fontSize: 12.5, color: neuromathixMuted, height: 1.4),
                           ),
                         ],
                       ),
@@ -906,12 +942,12 @@ class _SchedulingExplanationCardState extends State<_SchedulingExplanationCard> 
                   Expanded(
                     child: Text.rich(
                       TextSpan(
-                        style: GoogleFonts.dmSans(fontSize: 14, color: neuromathixText, fontWeight: FontWeight.w600),
+                        style: GoogleFonts.openSans(fontSize: 14, color: neuromathixText, fontWeight: FontWeight.w600),
                         children: [
                           const TextSpan(text: 'Next review scheduled for '),
                           TextSpan(
                             text: data.nextReviewDate,
-                            style: GoogleFonts.dmSans(fontWeight: FontWeight.w900, color: neuromathixBlue),
+                            style: GoogleFonts.openSans(fontWeight: FontWeight.w600, color: neuromathixBlue),
                           ),
                           if (data.nextReviewDays != null)
                             TextSpan(
@@ -1094,9 +1130,9 @@ class _ForgettingCurvePainter extends CustomPainter {
     final textPainter = TextPainter(
       text: TextSpan(
         text: 'YOU ARE HERE',
-        style: GoogleFonts.dmSans(
+        style: GoogleFonts.openSans(
           color: Colors.white,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
           fontSize: 14,
         ),
       ),
@@ -1115,7 +1151,7 @@ class _ForgettingCurvePainter extends CustomPainter {
 
     textPainter.text = TextSpan(
       text: 'Ideal',
-      style: GoogleFonts.dmSans(
+      style: GoogleFonts.openSans(
         color: neuromathixMuted,
         fontSize: 12,
         fontWeight: FontWeight.w700,
@@ -1132,7 +1168,7 @@ class _ForgettingCurvePainter extends CustomPainter {
     final idealStart = right - textPainter.width - 56;
     textPainter.text = TextSpan(
       text: 'Predicted',
-      style: GoogleFonts.dmSans(
+      style: GoogleFonts.openSans(
         color: neuromathixMuted,
         fontSize: 12,
         fontWeight: FontWeight.w700,
@@ -1162,10 +1198,10 @@ class _ForgettingCurvePainter extends CustomPainter {
       final offset = pointFor(point, 0);
       textPainter.text = TextSpan(
         text: point.label,
-        style: GoogleFonts.dmSans(
+        style: GoogleFonts.openSans(
           color: point.isCurrent ? neuromathixBlue : neuromathixMuted,
           fontSize: 13,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
         ),
       );
       textPainter.layout(maxWidth: 90);
@@ -1268,14 +1304,14 @@ class _QuestionFeedbackCardState extends State<_QuestionFeedbackCard> {
                       children: [
                         Text(
                           'Question ${widget.index} · ${item.topic}',
-                          style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700, color: neuromathixMuted),
+                          style: GoogleFonts.openSans(fontSize: 12, fontWeight: FontWeight.w700, color: neuromathixMuted),
                         ),
                         const SizedBox(height: 2),
                         Text(
                           item.questionText,
                           maxLines: _expanded ? null : 1,
                           overflow: _expanded ? null : TextOverflow.ellipsis,
-                          style: GoogleFonts.dmSans(fontSize: 14, fontWeight: FontWeight.w700, color: neuromathixText),
+                          style: GoogleFonts.openSans(fontSize: 14, fontWeight: FontWeight.w700, color: neuromathixText),
                         ),
                       ],
                     ),
@@ -1319,13 +1355,13 @@ class _QuestionFeedbackCardState extends State<_QuestionFeedbackCard> {
                   const SizedBox(height: 14),
                   Text(
                     item.xaiText,
-                    style: GoogleFonts.dmSans(fontSize: 13.5, color: neuromathixText, height: 1.55),
+                    style: GoogleFonts.openSans(fontSize: 13.5, color: neuromathixText, height: 1.55),
                   ),
                   if (item.hintsUsed > 0) ...[
                     const SizedBox(height: 10),
                     Text(
                       '💡 ${item.hintsUsed} hint${item.hintsUsed == 1 ? '' : 's'} used on this question.',
-                      style: GoogleFonts.dmSans(fontSize: 12, color: neuromathixMuted, fontWeight: FontWeight.w600),
+                      style: GoogleFonts.openSans(fontSize: 12, color: neuromathixMuted, fontWeight: FontWeight.w600),
                     ),
                   ],
                 ],
@@ -1356,9 +1392,9 @@ class _AnswerPill extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label.toUpperCase(),
-              style: GoogleFonts.dmSans(fontSize: 10, fontWeight: FontWeight.w800, color: neuromathixMuted, letterSpacing: 0.6)),
+              style: GoogleFonts.openSans(fontSize: 10, fontWeight: FontWeight.w600, color: neuromathixMuted, letterSpacing: 0.6)),
           const SizedBox(height: 3),
-          Text(value, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700, color: neuromathixText)),
+          Text(value, style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w700, color: neuromathixText)),
         ],
       ),
     );
@@ -1426,25 +1462,25 @@ class _FactorCard extends StatelessWidget {
             const SizedBox(height: 22),
             Text(
               factor.title,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                 color: neuromathixMuted,
                 fontSize: 15,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 4),
             Text(
               factor.value,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                 color: neuromathixText,
                 fontSize: 20,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 16),
             Text(
               factor.description,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                 color: neuromathixMuted,
                 fontSize: 15,
                 height: 1.38,
@@ -1490,16 +1526,16 @@ class _GuidanceCard extends StatelessWidget {
               children: [
                 Text(
                   data.guidanceTitle,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     color: neuromathixText,
                     fontSize: 20,
-                    fontWeight: FontWeight.w900,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 18),
                 Text(
                   data.guidanceBody,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     color: neuromathixMuted,
                     fontSize: 16,
                     height: 1.45,
@@ -1532,7 +1568,7 @@ class _ReportDialog extends StatelessWidget {
             children: [
               Text(
                 'Generated for ${report.generatedFor}',
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   color: neuromathixMuted,
                   fontWeight: FontWeight.w700,
                 ),
@@ -1541,11 +1577,11 @@ class _ReportDialog extends StatelessWidget {
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: DataTable(
-                  headingTextStyle: GoogleFonts.dmSans(
-                    fontWeight: FontWeight.w900,
+                  headingTextStyle: GoogleFonts.openSans(
+                    fontWeight: FontWeight.w600,
                     color: neuromathixText,
                   ),
-                  dataTextStyle: GoogleFonts.dmSans(
+                  dataTextStyle: GoogleFonts.openSans(
                     color: neuromathixMuted,
                     fontWeight: FontWeight.w600,
                   ),

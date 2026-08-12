@@ -105,14 +105,14 @@ class _CardState extends State<_Card> {
             ),
             const SizedBox(height: 12),
             Text(widget.d.title,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                     fontSize: 13.5,
                     fontWeight: FontWeight.w700,
                     color: _textPrimary,
                     height: 1.3)),
             const SizedBox(height: 6),
             Text(widget.d.desc,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                     fontSize: 12, color: _textSub, height: 1.55)),
           ],
         ),

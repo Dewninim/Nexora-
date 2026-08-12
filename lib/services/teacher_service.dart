@@ -44,11 +44,11 @@ class TeacherService {
   }) {
     return _firestore
         .collection('helpRequests')
-        .where('teacherId', isEqualTo: teacherId)
         .snapshots()
         .map((snapshot) {
       final requests = snapshot.docs
           .map(TeacherHelpRequest.fromDocument)
+          .where((item) => item.teacherId.isEmpty || item.teacherId == teacherId)
           .where(
             (item) => includeResolved ||
                 item.status != HelpRequestStatus.resolved,
@@ -110,6 +110,22 @@ class TeacherService {
   /// Assigns an existing student account to the signed-in teacher.
   /// This is suitable for the university prototype. A production institution
   /// should move assignment approval to an administrator workflow.
+  Future<List<Map<String, String>>> getAllRegisteredStudents() async {
+    final snapshot = await _firestore
+        .collection('users')
+        .where('role', isEqualTo: 'student')
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data();
+      return {
+        'id': doc.id,
+        'email': data['email']?.toString() ?? '',
+        'displayName': data['displayName']?.toString() ?? data['email']?.toString() ?? 'Student',
+      };
+    }).toList();
+  }
+
   Future<void> assignStudentByEmail(String email) async {
     final teacherId = currentTeacherId;
     final normalized = email.trim().toLowerCase();

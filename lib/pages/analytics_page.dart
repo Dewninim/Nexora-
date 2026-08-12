@@ -52,7 +52,7 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
                     padding: const EdgeInsets.all(32),
                     child: Text(
                       "Couldn't load your analytics right now. Please try again later.",
-                      style: GoogleFonts.dmSans(color: AppColors.textMuted),
+                      style: GoogleFonts.openSans(color: AppColors.textMuted),
                     ),
                   ),
                 )
@@ -73,6 +73,8 @@ class _AnalyticsPageState extends State<AnalyticsPage> {
     switch (section) {
       case StudentNavSection.dashboard:
         return '/student-dashboard';
+      case StudentNavSection.teacherMessages:
+        return '/teacher-messages';
       case StudentNavSection.uploadMaterial:
         return '/upload';
       case StudentNavSection.aiFeedback:
@@ -173,7 +175,7 @@ class _MaterialsOverviewSectionState extends State<_MaterialsOverviewSection> {
                   const Icon(Icons.menu_book_outlined, size: 18, color: AppColors.textMuted),
                   const SizedBox(width: 8),
                   Text('Your Materials',
-                      style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textDark)),
+                      style: GoogleFonts.openSans(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textDark)),
                 ],
               ),
               const SizedBox(height: 14),
@@ -184,26 +186,26 @@ class _MaterialsOverviewSectionState extends State<_MaterialsOverviewSection> {
                         Expanded(
                           flex: 3,
                           child: Text(m.filename,
-                              style: GoogleFonts.dmSans(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                              style: GoogleFonts.openSans(fontSize: 12.5, fontWeight: FontWeight.w600, color: AppColors.textDark),
                               maxLines: 1, overflow: TextOverflow.ellipsis),
                         ),
                         Expanded(
                           flex: 2,
                           child: Text('${m.sessionCount} session${m.sessionCount == 1 ? '' : 's'}',
-                              style: GoogleFonts.dmSans(fontSize: 11.5, color: AppColors.textMuted)),
+                              style: GoogleFonts.openSans(fontSize: 11.5, color: AppColors.textMuted)),
                         ),
                         Expanded(
                           flex: 2,
                           child: Text('${m.coveragePercent.toStringAsFixed(0)}% covered',
-                              style: GoogleFonts.dmSans(fontSize: 11.5, color: AppColors.textMuted)),
+                              style: GoogleFonts.openSans(fontSize: 11.5, color: AppColors.textMuted)),
                         ),
                         SizedBox(
                           width: 60,
                           child: m.latestScore == null
-                              ? Text('—', style: GoogleFonts.dmSans(fontSize: 11.5, color: AppColors.textFaint))
+                              ? Text('—', style: GoogleFonts.openSans(fontSize: 11.5, color: AppColors.textFaint))
                               : Text('${(m.latestScore! * 100).round()}%',
                                   textAlign: TextAlign.right,
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.openSans(
                                       fontSize: 12.5,
                                       fontWeight: FontWeight.w700,
                                       color: m.latestScore! >= 0.7 ? AppColors.success : AppColors.error)),
@@ -258,16 +260,16 @@ class _AnalyticsContent extends StatelessWidget {
           // Header
           Text(
             'Progress & Analytics',
-            style: GoogleFonts.dmSans(
-              fontSize: 24,
-              fontWeight: FontWeight.w800,
+            style: GoogleFonts.openSans(
+              fontSize: 26,
+              fontWeight: FontWeight.w700,
               color: AppColors.textDark,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Track your learning journey and identify areas for improvement',
-            style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 14),
+            'Track your personalized learning journey, synaptic retention, and topic mastery.',
+            style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 14),
           ),
           const SizedBox(height: 28),
 
@@ -329,7 +331,7 @@ class _AnalyticsContent extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             'Mastery Progress Over Time',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
                               color: AppColors.textDark,
@@ -345,7 +347,7 @@ class _AnalyticsContent extends StatelessWidget {
                                 child: Text(
                                   'No progress data yet — complete a\nlearning session to see your trend.',
                                   textAlign: TextAlign.center,
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.openSans(
                                     fontSize: 12,
                                     color: AppColors.textFaint,
                                   ),
@@ -369,7 +371,7 @@ class _AnalyticsContent extends StatelessWidget {
                               .map(
                                 (p) => Text(
                                   p.label,
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.openSans(
                                     fontSize: 10,
                                     color: AppColors.textFaint,
                                   ),
@@ -388,7 +390,7 @@ class _AnalyticsContent extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             'Mastery Progress Over Time',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               fontSize: 11,
                               color: AppColors.textMuted,
                             ),
@@ -417,7 +419,7 @@ class _AnalyticsContent extends StatelessWidget {
                           const SizedBox(width: 8),
                           Text(
                             'Topic Mastery Breakdown',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
                               color: AppColors.textDark,
@@ -435,7 +437,7 @@ class _AnalyticsContent extends StatelessWidget {
                               .map(
                                 (l) => Text(
                                   l,
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.openSans(
                                     fontSize: 10,
                                     color: AppColors.textFaint,
                                   ),
@@ -450,7 +452,7 @@ class _AnalyticsContent extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(vertical: 24),
                           child: Text(
                             'No topic data yet.',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               fontSize: 12,
                               color: AppColors.textFaint,
                             ),
@@ -469,7 +471,7 @@ class _AnalyticsContent extends StatelessWidget {
                                   width: 90,
                                   child: Text(
                                     topic.topic,
-                                    style: GoogleFonts.dmSans(
+                                    style: GoogleFonts.openSans(
                                       fontSize: 11,
                                       color: const Color(0xFF374151),
                                     ),
@@ -505,7 +507,7 @@ class _AnalyticsContent extends StatelessWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   '${topic.masteryPercent}',
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.openSans(
                                     fontSize: 11,
                                     fontWeight: FontWeight.w600,
                                     color: const Color(0xFF374151),
@@ -526,7 +528,7 @@ class _AnalyticsContent extends StatelessWidget {
                           const SizedBox(width: 6),
                           Text(
                             'Topic Mastery Breakdown',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               fontSize: 11,
                               color: AppColors.textMuted,
                             ),
@@ -544,7 +546,7 @@ class _AnalyticsContent extends StatelessWidget {
           // ── AI Insights section ──
           Text(
             'Insights',
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.openSans(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.textDark,
@@ -562,7 +564,7 @@ class _AnalyticsContent extends StatelessWidget {
           // ── Detailed Topic Analysis ──
           Text(
             'Detailed Topic Analysis',
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.openSans(
               fontSize: 18,
               fontWeight: FontWeight.w700,
               color: AppColors.textDark,
@@ -572,7 +574,7 @@ class _AnalyticsContent extends StatelessWidget {
           if (data.topicMastery.isEmpty)
             Text(
               'Complete a learning session to see a per-topic breakdown here.',
-              style: GoogleFonts.dmSans(fontSize: 13, color: AppColors.textMuted),
+              style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted),
             )
           else
             ...data.topicMastery.map((topic) {
@@ -584,7 +586,7 @@ class _AnalyticsContent extends StatelessWidget {
                   children: [
                     Text(
                       topic.topic,
-                      style: GoogleFonts.dmSans(
+                      style: GoogleFonts.openSans(
                         fontWeight: FontWeight.w600,
                         fontSize: 14,
                         color: AppColors.textDark,
@@ -619,7 +621,7 @@ class _AnalyticsContent extends StatelessWidget {
                         const SizedBox(width: 12),
                         Text(
                           '${topic.masteryPercent}',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
                             color: AppColors.textDark,
@@ -637,7 +639,7 @@ class _AnalyticsContent extends StatelessWidget {
                           ),
                           child: Text(
                             topic.trend,
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               color: textColor,
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
@@ -745,15 +747,15 @@ class _AnalyticsContent extends StatelessWidget {
               children: [
                 Text(
                   value,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     fontSize: 22,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.textDark,
                   ),
                 ),
                 Text(
                   label,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     fontSize: 12,
                     color: AppColors.textMuted,
                   ),
@@ -803,7 +805,7 @@ class _AnalyticsContent extends StatelessWidget {
               Expanded(
                 child: Text(
                   title,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
                     color: AppColors.textDark,
@@ -815,7 +817,7 @@ class _AnalyticsContent extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             body,
-            style: GoogleFonts.dmSans(
+            style: GoogleFonts.openSans(
               fontSize: 13,
               color: Color(0xFF374151),
               height: 1.4,
@@ -851,7 +853,7 @@ class _LineChartPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: '${(i * 25).toInt()}',
-          style: GoogleFonts.dmSans(color: AppColors.textFaint, fontSize: 10),
+          style: GoogleFonts.openSans(color: AppColors.textFaint, fontSize: 10),
         ),
         textDirection: TextDirection.ltr,
       )..layout();

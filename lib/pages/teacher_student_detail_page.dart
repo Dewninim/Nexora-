@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../models/review_schedule_models.dart';
 import '../models/teacher_models.dart';
+import '../theme/app_theme.dart';
 import '../services/review_schedule_service.dart';
 import '../services/teacher_service.dart';
 import 'teacher_message_dialog.dart';
@@ -111,7 +113,7 @@ class _TeacherStudentDetailPageState extends State<TeacherStudentDetailPage> {
                       : student.displayName[0].toUpperCase(),
                   style: const TextStyle(
                     color: Colors.white,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                     fontSize: 20,
                   ),
                 ),
@@ -125,7 +127,7 @@ class _TeacherStudentDetailPageState extends State<TeacherStudentDetailPage> {
                       student.displayName,
                       style: const TextStyle(
                         fontSize: 20,
-                        fontWeight: FontWeight.w800,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                     Text(
@@ -174,7 +176,7 @@ class _TeacherStudentDetailPageState extends State<TeacherStudentDetailPage> {
             const SizedBox(height: 16),
             const Text(
               'Why this student needs attention',
-              style: TextStyle(fontWeight: FontWeight.w800),
+              style: TextStyle(fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 8),
             for (final reason in student.riskReasons)
@@ -211,7 +213,7 @@ class _TeacherStudentDetailPageState extends State<TeacherStudentDetailPage> {
             children: [
               const Text(
                 'Review schedule',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
               TextButton.icon(
@@ -275,7 +277,7 @@ class _TeacherStudentDetailPageState extends State<TeacherStudentDetailPage> {
                               Text(
                                 schedule.conceptName,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.w800),
+                                    fontWeight: FontWeight.w600),
                               ),
                               const SizedBox(height: 3),
                               Text(
@@ -297,7 +299,7 @@ class _TeacherStudentDetailPageState extends State<TeacherStudentDetailPage> {
                                 color: overdue
                                     ? const Color(0xFFDC2626)
                                     : const Color(0xFF153E7C),
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                                 fontSize: 12,
                               ),
                             ),
@@ -328,7 +330,7 @@ class _TeacherStudentDetailPageState extends State<TeacherStudentDetailPage> {
             children: [
               const Text(
                 'Teacher messages',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               const Spacer(),
               IconButton(
@@ -368,7 +370,7 @@ class _TeacherStudentDetailPageState extends State<TeacherStudentDetailPage> {
                       children: [
                         Text(
                           message.subject,
-                          style: const TextStyle(fontWeight: FontWeight.w800),
+                          style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 5),
                         Text(message.message),
@@ -519,106 +521,295 @@ class _ManualReviewDialogState extends State<_ManualReviewDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Create review schedule'),
-      content: SizedBox(
-        width: 480,
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: Colors.white,
+      child: Container(
+        width: 520,
+        padding: const EdgeInsets.all(26),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.6), width: 1.5),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
         child: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.goldLight,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.5)),
+                    ),
+                    child: const Icon(
+                      Icons.event_available_rounded,
+                      color: AppColors.goldAccent,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Create Review Schedule',
+                        style: GoogleFonts.openSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      Text(
+                        'Assign a targeted review session for this student.',
+                        style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Mathematics Topic',
+                style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark),
+              ),
+              const SizedBox(height: 6),
               TextField(
                 controller: _concept,
-                decoration: const InputDecoration(
-                  labelText: 'Mathematics topic',
-                  border: OutlineInputBorder(),
+                style: GoogleFonts.openSans(fontSize: 14, color: AppColors.textDark),
+                decoration: InputDecoration(
+                  hintText: 'e.g. Complex Numbers Exam Questions',
+                  hintStyle: GoogleFonts.openSans(fontSize: 13, color: AppColors.textFaint),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+                  ),
                 ),
               ),
-              const SizedBox(height: 12),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.calendar_month_rounded),
-                title: const Text('Date'),
-                subtitle: Text(DateFormat('dd MMMM yyyy').format(_date)),
-                onTap: _pickDate,
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: InkWell(
+                      onTap: _pickDate,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_month_rounded, color: AppColors.accent, size: 20),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Date', style: GoogleFonts.openSans(fontSize: 12, color: AppColors.textMuted)),
+                                Text(
+                                  DateFormat('dd MMM yyyy').format(_date),
+                                  style: GoogleFonts.openSans(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: InkWell(
+                      onTap: _pickTime,
+                      borderRadius: BorderRadius.circular(12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.border),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.schedule_rounded, color: AppColors.accent, size: 20),
+                            const SizedBox(width: 10),
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Time', style: GoogleFonts.openSans(fontSize: 12, color: AppColors.textMuted)),
+                                Text(
+                                  _time.format(context),
+                                  style: GoogleFonts.openSans(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                leading: const Icon(Icons.schedule_rounded),
-                title: const Text('Time'),
-                subtitle: Text(_time.format(context)),
-                onTap: _pickTime,
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Duration', style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<int>(
+                          initialValue: _duration,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: AppColors.border),
+                            ),
+                          ),
+                          items: const [20, 30, 45, 60]
+                              .map((value) => DropdownMenuItem(
+                                    value: value,
+                                    child: Text('$value min', style: GoogleFonts.openSans(fontSize: 14)),
+                                  ))
+                              .toList(),
+                          onChanged: (value) => setState(() => _duration = value ?? _duration),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Priority', style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+                        const SizedBox(height: 6),
+                        DropdownButtonFormField<ReviewPriority>(
+                          initialValue: _priority,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: const BorderSide(color: AppColors.border),
+                            ),
+                          ),
+                          items: ReviewPriority.values
+                              .map((value) => DropdownMenuItem(
+                                    value: value,
+                                    child: Text(value.label, style: GoogleFonts.openSans(fontSize: 14)),
+                                  ))
+                              .toList(),
+                          onChanged: (value) => setState(() => _priority = value ?? _priority),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              DropdownButtonFormField<int>(
-                initialValue: _duration,
-                decoration: const InputDecoration(labelText: 'Duration'),
-                items: const [20, 30, 45, 60]
-                    .map((value) => DropdownMenuItem(
-                          value: value,
-                          child: Text('$value minutes'),
-                        ))
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => _duration = value ?? _duration),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<ReviewPriority>(
-                initialValue: _priority,
-                decoration: const InputDecoration(labelText: 'Priority'),
-                items: ReviewPriority.values
-                    .map((value) => DropdownMenuItem(
-                          value: value,
-                          child: Text(value.label),
-                        ))
-                    .toList(),
-                onChanged: (value) =>
-                    setState(() => _priority = value ?? _priority),
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
+              Text('Reason Shown to Student', style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
+              const SizedBox(height: 6),
               TextField(
                 controller: _reason,
                 minLines: 3,
-                maxLines: 6,
-                decoration: const InputDecoration(
-                  labelText: 'Reason shown to student',
-                  alignLabelWithHint: true,
-                  border: OutlineInputBorder(),
+                maxLines: 5,
+                style: GoogleFonts.openSans(fontSize: 14, color: AppColors.textDark),
+                decoration: InputDecoration(
+                  hintText: 'Explanation for why this review was assigned...',
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+                  ),
                 ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text('Cancel', style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 14, fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      final concept = _concept.text.trim();
+                      if (concept.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Please enter a Mathematics topic name.'),
+                            duration: Duration(seconds: 2),
+                          ),
+                        );
+                        return;
+                      }
+                      final scheduledAt = DateTime(
+                        _date.year,
+                        _date.month,
+                        _date.day,
+                        _time.hour,
+                        _time.minute,
+                      );
+                      Navigator.pop(
+                        context,
+                        _ManualReviewResult(
+                          conceptName: concept,
+                          scheduledAt: scheduledAt,
+                          durationMinutes: _duration,
+                          reason: _reason.text.trim(),
+                          priority: _priority,
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.check_circle_rounded, size: 16),
+                    label: const Text('Create Schedule'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 2,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: () {
-            final concept = _concept.text.trim();
-            if (concept.isEmpty) return;
-            final scheduledAt = DateTime(
-              _date.year,
-              _date.month,
-              _date.day,
-              _time.hour,
-              _time.minute,
-            );
-            Navigator.pop(
-              context,
-              _ManualReviewResult(
-                conceptName: concept,
-                scheduledAt: scheduledAt,
-                durationMinutes: _duration,
-                reason: _reason.text.trim(),
-                priority: _priority,
-              ),
-            );
-          },
-          child: const Text('Create'),
-        ),
-      ],
     );
   }
 
@@ -713,7 +904,7 @@ class _InfoMetric extends StatelessWidget {
                   value,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(fontWeight: FontWeight.w800),
+                  style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ],
             ),
@@ -741,7 +932,7 @@ class _RiskBadge extends StatelessWidget {
         level.label,
         style: TextStyle(
           color: level.chipColor,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           fontSize: 12,
         ),
       ),

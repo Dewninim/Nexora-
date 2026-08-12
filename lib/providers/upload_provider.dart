@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -168,6 +168,36 @@ class UploadProvider extends ChangeNotifier {
         difficultySummary: data['difficulty_summary'] as Map<String, dynamic>?,
       );
       notifyListeners();
+
+      // Sync active topic to teacher dashboard in Firestore
+      if (uid.isNotEmpty && uid != 'anonymous') {
+        final topicName = name.replaceAll(RegExp(r'\.[^.]+$'), '');
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        final userData = userDoc.data() ?? {};
+        String teacherId = userData['teacherId']?.toString() ?? '';
+
+        if (teacherId.isEmpty) {
+          final tQuery = await FirebaseFirestore.instance
+              .collection('users')
+              .where('role', isEqualTo: 'teacher')
+              .limit(1)
+              .get();
+          if (tQuery.docs.isNotEmpty) teacherId = tQuery.docs.first.id;
+        }
+
+        await FirebaseFirestore.instance.collection('teacherStudentSummaries').doc(uid).set({
+          'studentId': uid,
+          if (teacherId.isNotEmpty) 'teacherId': teacherId,
+          'displayName': userData['displayName'] ??
+              FirebaseAuth.instance.currentUser?.displayName ??
+              FirebaseAuth.instance.currentUser?.email ??
+              'Student',
+          'email': userData['email'] ?? FirebaseAuth.instance.currentUser?.email ?? '',
+          'currentTopic': topicName,
+          'lastActiveAt': FieldValue.serverTimestamp(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
     } catch (e) {
       _stopCreep();
       _state = _state.copyWith(

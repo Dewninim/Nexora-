@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
@@ -100,6 +102,8 @@ class _StudentDashboardPageState extends State<StudentDashboardPage> {
     switch (section) {
       case StudentNavSection.dashboard:
         return '/student-dashboard';
+      case StudentNavSection.teacherMessages:
+        return '/teacher-messages';
       case StudentNavSection.uploadMaterial:
         return '/upload';
       case StudentNavSection.aiFeedback:
@@ -123,30 +127,66 @@ class _DashboardContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(28, 34, 28, 40),
+      padding: const EdgeInsets.fromLTRB(36, 32, 36, 40),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 1500),
+          constraints: const BoxConstraints(maxWidth: 1400),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _DashboardHeader(streakDays: data.currentStreakDays),
-              const SizedBox(height: 26),
-              // Forgetting-curve-computed next reviews, pulled live from the
-              // Flask backend (/user/<uid>/materials). Everything else on
-              // this dashboard (below) comes from BackendStudentLearningService
-              // — also real, derived from /user/<uid>/analytics and materials.
+              // Top Row: Luxury Hero Banner (Left 7) + Current Streak Card (Right 5)
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide = constraints.maxWidth >= 960;
+                  final heroBanner = _LuxuryHeroBanner(data: data);
+                  final streakCard = _CurrentStreakCard(streakDays: data.currentStreakDays);
+
+                  if (!isWide) {
+                    return Column(
+                      children: [
+                        heroBanner,
+                        const SizedBox(height: 20),
+                        streakCard,
+                      ],
+                    );
+                  }
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(flex: 7, child: heroBanner),
+                      const SizedBox(width: 24),
+                      Expanded(flex: 4, child: streakCard),
+                    ],
+                  );
+                },
+              ),
+
+              const SizedBox(height: 28),
+
+              // Live forgetting-curve-computed next reviews from backend
               _NextReviewsSection(studentId: data.studentId),
-              const SizedBox(height: 26),
+
+              const SizedBox(height: 28),
+
+              // Second Row: Memory Retention Overview + Key Metrics
               _RetentionOverview(data: data),
-              const SizedBox(height: 30),
+
+              const SizedBox(height: 28),
+
+              // Stepper: Get Started
+              const _GetStartedStepper(),
+
+              const SizedBox(height: 28),
+
+              // Bottom Stats Row: Materials Tracked, Study Time, Overall Mastery
+              _ProgressStats(stats: data.progressStats),
+
+              const SizedBox(height: 32),
+
               Text(
                 'Recommended Now',
-                style: GoogleFonts.dmSans(
-                  fontSize: 23,
-                  fontWeight: FontWeight.w800,
-                  color: neuromathixText,
-                ),
+                style: AppText.sectionHeader,
               ),
               const SizedBox(height: 16),
               _RecommendedConceptGrid(
@@ -173,9 +213,461 @@ class _DashboardContent extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 26),
-              _ProgressStats(stats: data.progressStats),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Luxury Dark Navy Hero Banner matching reference screenshot media_1786505866507.png
+class _LuxuryHeroBanner extends StatelessWidget {
+  final StudentDashboardData data;
+
+  const _LuxuryHeroBanner({required this.data});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFF060B19),
+            Color(0xFF0E1A38),
+            Color(0xFF1E3A8A),
+          ],
+        ),
+        border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.4), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.3),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+      child: Stack(
+        children: [
+          // Background Math Formulas Watermark
+          Positioned(
+            right: 20,
+            bottom: 0,
+            child: Opacity(
+              opacity: 0.08,
+              child: Text(
+                'f(x)=x²   ∫x dx   a²+b²=c²   sin(x)',
+                style: GoogleFonts.openSans(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                  letterSpacing: 2,
+                ),
+              ),
+            ),
+          ),
+
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      'Ready to strengthen your math memory?',
+                      style: GoogleFonts.openSans(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        height: 1.25,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Upload a lesson and NeuroMathix will build your personalized study path.',
+                      style: GoogleFonts.openSans(
+                        fontSize: 14,
+                        color: Colors.white.withValues(alpha: 0.8),
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+                    Wrap(
+                      spacing: 14,
+                      runSpacing: 10,
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () => Navigator.pushNamed(context, '/upload'),
+                          icon: const Icon(Icons.cloud_upload_outlined, size: 18),
+                          label: Text(
+                            'Upload Material',
+                            style: GoogleFonts.openSans(fontWeight: FontWeight.w700, fontSize: 13.5),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.accent,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            elevation: 4,
+                            shadowColor: AppColors.accent.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => Navigator.pushNamed(context, '/review'),
+                          icon: const Icon(Icons.arrow_forward_rounded, size: 18),
+                          label: Text(
+                            'View Learning Path',
+                            style: GoogleFonts.openSans(fontWeight: FontWeight.w700, fontSize: 13.5),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: BorderSide(color: Colors.white.withValues(alpha: 0.6), width: 1.5),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                        OutlinedButton.icon(
+                          onPressed: () => _showStudentHelpDialog(context),
+                          icon: const Icon(Icons.help_outline_rounded, size: 18),
+                          label: Text(
+                            'Ask Teacher for Help',
+                            style: GoogleFonts.openSans(fontWeight: FontWeight.w700, fontSize: 13.5),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: AppColors.goldAccent, width: 1.5),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Glowing 3D Neural Brain Visual on Right
+              const SizedBox(width: 20),
+              Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: const RadialGradient(
+                    colors: [Color(0xFF3B82F6), Color(0xFF1D4ED8), Color(0xFF0F172A)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.accent.withValues(alpha: 0.6),
+                      blurRadius: 28,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.psychology_outlined,
+                  size: 64,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Current Streak Card matching reference screenshot media_1786505866507.png
+class _CurrentStreakCard extends StatelessWidget {
+  final int streakDays;
+
+  const _CurrentStreakCard({required this.streakDays});
+
+  @override
+  Widget build(BuildContext context) {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final todayIndex = DateTime.now().weekday - 1; // 0=Mon, 1=Tue, 2=Wed, etc.
+
+    bool isDayActive(int i) {
+      if (streakDays <= 0) return false;
+      final startActive = todayIndex - streakDays + 1;
+      return i >= startActive && i <= todayIndex;
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            'Current Streak',
+            style: GoogleFonts.openSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: AppColors.goldLight,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.goldBorder, width: 2),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.goldBorder.withValues(alpha: 0.3),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.local_fire_department_rounded,
+                  size: 34,
+                  color: Color(0xFFD97706),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Text(
+                '$streakDays Days',
+                style: GoogleFonts.openSans(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              for (int i = 0; i < days.length; i++)
+                Column(
+                  children: [
+                    Text(
+                      days[i],
+                      style: GoogleFonts.openSans(
+                        fontSize: 11,
+                        fontWeight: i == todayIndex ? FontWeight.w600 : FontWeight.w600,
+                        color: i == todayIndex ? AppColors.accent : AppColors.textMuted,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: 22,
+                      height: 22,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDayActive(i) ? AppColors.accent : Colors.white,
+                        border: Border.all(
+                          color: isDayActive(i)
+                              ? (i == todayIndex ? AppColors.goldBorder : AppColors.accent)
+                              : AppColors.border,
+                          width: i == todayIndex ? 2 : 1.5,
+                        ),
+                      ),
+                      child: isDayActive(i)
+                          ? const Icon(Icons.check, size: 13, color: Colors.white)
+                          : null,
+                    ),
+                  ],
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Stepper Component for "Get Started" matching reference screenshot
+class _GetStartedStepper extends StatelessWidget {
+  const _GetStartedStepper();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+      ),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Get Started',
+            style: GoogleFonts.openSans(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textDark,
+            ),
+          ),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 600;
+
+              final steps = [
+                _StepTile(
+                  num: '1',
+                  icon: Icons.cloud_upload_outlined,
+                  title: 'Upload material',
+                  badge: 'Upload your first material',
+                  active: true,
+                  onTap: () => Navigator.pushNamed(context, '/upload'),
+                ),
+                _StepTile(
+                  num: '2',
+                  icon: Icons.description_outlined,
+                  title: 'Generate practice',
+                  badge: null,
+                  active: false,
+                  onTap: () => Navigator.pushNamed(context, '/review'),
+                ),
+                _StepTile(
+                  num: '3',
+                  icon: Icons.star_outline_rounded,
+                  title: 'Build mastery',
+                  badge: null,
+                  active: false,
+                  onTap: () {},
+                ),
+              ];
+
+              if (isNarrow) {
+                return Column(children: steps);
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: steps[0]),
+                  const Text('-------', style: TextStyle(color: AppColors.border)),
+                  Expanded(child: steps[1]),
+                  const Text('-------', style: TextStyle(color: AppColors.border)),
+                  Expanded(child: steps[2]),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StepTile extends StatelessWidget {
+  final String num;
+  final IconData icon;
+  final String title;
+  final String? badge;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _StepTile({
+    required this.num,
+    required this.icon,
+    required this.title,
+    required this.badge,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        child: Row(
+          children: [
+            Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: active ? AppColors.accent : const Color(0xFFF1F5F9),
+              ),
+              alignment: Alignment.center,
+              child: Text(
+                num,
+                style: GoogleFonts.openSans(
+                  color: active ? Colors.white : AppColors.textMuted,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: active ? AppColors.accent.withValues(alpha: 0.1) : const Color(0xFFF8FAFC),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, size: 20, color: active ? AppColors.accent : AppColors.textMuted),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.openSans(
+                      fontSize: 13.5,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
+                  ),
+                  if (badge != null) ...[
+                    const SizedBox(height: 4),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: AppColors.accent,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        badge!,
+                        style: GoogleFonts.openSans(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -254,7 +746,7 @@ class _NextReviewsSectionState extends State<_NextReviewsSection> {
                   OutlinedButton.icon(
                     onPressed: () => Navigator.pushNamed(context, '/upload'),
                     icon: const Icon(Icons.add, size: 16),
-                    label: Text('New Material', style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                    label: Text('New Material', style: GoogleFonts.openSans(fontSize: 12, fontWeight: FontWeight.w700)),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.primary,
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -266,7 +758,7 @@ class _NextReviewsSectionState extends State<_NextReviewsSection> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Timed to when you\'re about to forget each topic — right on schedule.',
+                'Timed to when you\'re about to forget each topic right on schedule.',
                 style: AppText.bodySmall,
               ),
               const SizedBox(height: 14),
@@ -412,7 +904,7 @@ class _NextReviewRowState extends State<_NextReviewRow> {
             margin: const EdgeInsets.only(right: 8),
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
             decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(20)),
-            child: Text(label, style: GoogleFonts.dmSans(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+            child: Text(label, style: GoogleFonts.openSans(color: color, fontWeight: FontWeight.w700, fontSize: 12)),
           ),
           SizedBox(
             height: 32,
@@ -427,94 +919,11 @@ class _NextReviewRowState extends State<_NextReviewRow> {
               ),
               child: _starting
                   ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                  : Text('Continue', style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                  : Text('Continue', style: GoogleFonts.openSans(fontSize: 12, fontWeight: FontWeight.w700)),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-class _DashboardHeader extends StatelessWidget {
-  final int streakDays;
-
-  const _DashboardHeader({required this.streakDays});
-
-  @override
-  Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final isNarrow = constraints.maxWidth < 680;
-
-        return Flex(
-          direction: isNarrow ? Axis.vertical : Axis.horizontal,
-          crossAxisAlignment: isNarrow
-              ? CrossAxisAlignment.start
-              : CrossAxisAlignment.end,
-          children: [
-            if (isNarrow)
-              const _HeaderCopy()
-            else
-              const Expanded(child: _HeaderCopy()),
-            if (isNarrow) const SizedBox(height: 18),
-            Column(
-              crossAxisAlignment: isNarrow
-                  ? CrossAxisAlignment.start
-                  : CrossAxisAlignment.end,
-              children: [
-                Text(
-                  'Current Streak',
-                  style: GoogleFonts.dmSans(
-                    color: neuromathixMuted,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '$streakDays Days',
-                  style: GoogleFonts.dmSans(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w900,
-                    color: neuromathixText,
-                  ),
-                ),
-              ],
-            ),
-          ],
-        );
-      },
-    );
-  }
-}
-
-class _HeaderCopy extends StatelessWidget {
-  const _HeaderCopy();
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Dashboard',
-          style: GoogleFonts.dmSans(
-            fontSize: 38,
-            fontWeight: FontWeight.w900,
-            color: neuromathixText,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Get a glimpse of your learning journey',
-          style: GoogleFonts.dmSans(
-            fontSize: 24,
-            fontWeight: FontWeight.w400,
-            color: neuromathixText,
-          ),
-        ),
-      ],
     );
   }
 }
@@ -568,7 +977,7 @@ class _RetentionOverview extends StatelessWidget {
                     Container(width: 1, height: 280, color: neuromathixBorder),
                     const SizedBox(width: 28),
                     SizedBox(
-                      width: 190,
+                      width: 220,
                       child: _MetricRail(metrics: data.keyMetrics),
                     ),
                   ],
@@ -595,20 +1004,12 @@ class _RetentionTitle extends StatelessWidget {
             children: [
               Text(
                 'Memory Retention Overview',
-                style: GoogleFonts.dmSans(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w900,
-                  color: neuromathixText,
-                ),
+                style: AppText.sectionHeader,
               ),
               const SizedBox(height: 4),
               Text(
                 'Real-time synaptic strength visualization',
-                style: GoogleFonts.dmSans(
-                  fontSize: 15,
-                  color: neuromathixMuted,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: AppText.bodyMuted,
               ),
             ],
           ),
@@ -618,17 +1019,13 @@ class _RetentionTitle extends StatelessWidget {
           children: [
             Text(
               '${data.retentionPercent}%',
-              style: GoogleFonts.dmSans(
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-                color: neuromathixText,
-              ),
+              style: AppText.metricValue,
             ),
             Text(
               data.retentionDeltaLabel,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                 color: const Color(0xFF54A86F),
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],
@@ -650,9 +1047,9 @@ class _MetricRail extends StatelessWidget {
       children: [
         Text(
           'KEY METRICS',
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixMuted,
-            fontWeight: FontWeight.w900,
+            fontWeight: FontWeight.w600,
             letterSpacing: 1.4,
             fontSize: 14,
           ),
@@ -687,7 +1084,7 @@ class _MetricItem extends StatelessWidget {
       children: [
         Text(
           metric.label,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             color: neuromathixMuted,
             fontWeight: FontWeight.w700,
           ),
@@ -697,12 +1094,16 @@ class _MetricItem extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 18),
             const SizedBox(width: 8),
-            Text(
-              metric.value,
-              style: GoogleFonts.dmSans(
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-                color: neuromathixText,
+            Expanded(
+              child: Text(
+                metric.value,
+                style: GoogleFonts.openSans(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: neuromathixText,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
             ),
           ],
@@ -826,10 +1227,10 @@ class _RetentionTrendPainter extends CustomPainter {
       if (points[i].label.isEmpty) continue;
       textPainter.text = TextSpan(
         text: points[i].label,
-        style: GoogleFonts.dmSans(
+        style: GoogleFonts.openSans(
           color: neuromathixMuted,
           fontSize: 13,
-          fontWeight: FontWeight.w900,
+          fontWeight: FontWeight.w600,
           letterSpacing: 1.2,
         ),
       );
@@ -921,9 +1322,9 @@ class _RecommendedConceptCard extends StatelessWidget {
                 children: [
                   Text(
                     concept.title,
-                    style: GoogleFonts.dmSans(
+                    style: GoogleFonts.openSans(
                       fontSize: 20,
-                      fontWeight: FontWeight.w900,
+                      fontWeight: FontWeight.w600,
                       color: neuromathixText,
                     ),
                   ),
@@ -945,7 +1346,7 @@ class _RecommendedConceptCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           concept.retentionNote,
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                             color: neuromathixMuted,
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
@@ -969,8 +1370,8 @@ class _RecommendedConceptCard extends StatelessWidget {
                       ),
                       child: Text(
                         concept.actionLabel,
-                        style: GoogleFonts.dmSans(
-                          fontWeight: FontWeight.w900,
+                        style: GoogleFonts.openSans(
+                          fontWeight: FontWeight.w600,
                           fontSize: 15,
                         ),
                       ),
@@ -995,8 +1396,8 @@ class _ConceptVisual extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = style == ConceptVisualStyle.mathematics
-        ? const [Color(0xFF0D9DC4), Color(0xFF05364F)]
-        : const [Color(0xFF9EB68D), Color(0xFF35462F)];
+        ? const [Color(0xFF2563EB), Color(0xFF0F172A)]
+        : const [Color(0xFF3B82F6), Color(0xFF1E3A8A)];
 
     return Stack(
       children: [
@@ -1026,9 +1427,9 @@ class _ConceptVisual extends StatelessWidget {
             ),
             child: Text(
               label,
-              style: GoogleFonts.dmSans(
+              style: GoogleFonts.openSans(
                 color: Colors.white,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),
@@ -1143,9 +1544,9 @@ class _QuickCheckCard extends StatelessWidget {
             children: [
               Text(
                 prompt.tag,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   color: neuromathixBlue,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                   letterSpacing: 1,
                   fontSize: 13,
                 ),
@@ -1153,15 +1554,15 @@ class _QuickCheckCard extends StatelessWidget {
               const SizedBox(height: 6),
               Text(
                 prompt.title,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   fontSize: 20,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
               const SizedBox(height: 6),
               Text(
                 prompt.subtitle,
-                style: GoogleFonts.dmSans(color: neuromathixMuted, fontSize: 15),
+                style: GoogleFonts.openSans(color: neuromathixMuted, fontSize: 15),
               ),
             ],
           );
@@ -1191,8 +1592,8 @@ class _QuickCheckCard extends StatelessWidget {
                   ),
                   child: Text(
                     prompt.actionLabel,
-                    style: GoogleFonts.dmSans(
-                      fontWeight: FontWeight.w900,
+                    style: GoogleFonts.openSans(
+                      fontWeight: FontWeight.w600,
                       fontSize: 16,
                     ),
                   ),
@@ -1265,7 +1666,7 @@ class _ProgressStatCard extends StatelessWidget {
             children: [
               Text(
                 stat.label,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   color: neuromathixMuted,
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -1274,10 +1675,10 @@ class _ProgressStatCard extends StatelessWidget {
               const SizedBox(height: 5),
               Text(
                 stat.value,
-                style: GoogleFonts.dmSans(
+                style: GoogleFonts.openSans(
                   color: neuromathixText,
                   fontSize: 22,
-                  fontWeight: FontWeight.w900,
+                  fontWeight: FontWeight.w600,
                 ),
               ),
             ],
@@ -1315,6 +1716,211 @@ class _WhiteCard extends StatelessWidget {
       ),
       child: child,
     );
+  }
+}
+
+Future<void> _showStudentHelpDialog(BuildContext context) async {
+  final topicCtrl = TextEditingController();
+  final descCtrl = TextEditingController();
+  final uid = FirebaseAuth.instance.currentUser?.uid ?? '';
+  final studentName = FirebaseAuth.instance.currentUser?.displayName ??
+      FirebaseAuth.instance.currentUser?.email?.split('@').first ??
+      'Student';
+
+  final result = await showDialog<bool>(
+    context: context,
+    builder: (dialogCtx) {
+      return Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        backgroundColor: Colors.white,
+        child: Container(
+          width: 500,
+          padding: const EdgeInsets.all(26),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.6), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.help_center_rounded,
+                      color: AppColors.accent,
+                      size: 26,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ask Teacher for Help',
+                        style: GoogleFonts.openSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      Text(
+                        'Send a direct request to your assigned educator.',
+                        style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Mathematics Topic',
+                style: GoogleFonts.openSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: topicCtrl,
+                autofocus: true,
+                style: GoogleFonts.openSans(fontSize: 14, color: AppColors.textDark),
+                decoration: InputDecoration(
+                  hintText: 'e.g. Integration by Parts or Matrix Transformations',
+                  hintStyle: GoogleFonts.openSans(fontSize: 13, color: AppColors.textFaint),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Description / Question Details',
+                style: GoogleFonts.openSans(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: descCtrl,
+                minLines: 3,
+                maxLines: 5,
+                style: GoogleFonts.openSans(fontSize: 14, color: AppColors.textDark),
+                decoration: InputDecoration(
+                  hintText: 'Describe where you got stuck or what you need clarified...',
+                  hintStyle: GoogleFonts.openSans(fontSize: 13, color: AppColors.textFaint),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.border),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(dialogCtx, false),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textMuted,
+                      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                    ),
+                    child: Text('Cancel', style: GoogleFonts.openSans(fontSize: 14, fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 12),
+                  ElevatedButton.icon(
+                    onPressed: () => Navigator.pop(dialogCtx, true),
+                    icon: const Icon(Icons.send_rounded, size: 16),
+                    label: const Text('Send Help Request'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.accent,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 13),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 2,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+
+  if (result == true && context.mounted) {
+    final topic = topicCtrl.text.trim();
+    final desc = descCtrl.text.trim();
+    if (topic.isEmpty || desc.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter both topic name and description.')),
+      );
+      return;
+    }
+
+    try {
+      // Fetch assigned teacherId if available
+      String teacherId = '';
+      if (uid.isNotEmpty) {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        teacherId = userDoc.data()?['teacherId']?.toString() ?? '';
+      }
+
+      final docRef = FirebaseFirestore.instance.collection('helpRequests').doc();
+      await docRef.set({
+        'studentId': uid,
+        'teacherId': teacherId,
+        'studentName': studentName,
+        'studentEmail': FirebaseAuth.instance.currentUser?.email ?? '',
+        'conceptName': topic,
+        'studentMessage': desc,
+        'status': 'pending',
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Help request sent! Your teacher will be notified.')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to send help request: $e')),
+      );
+    }
   }
 }
 

@@ -13,6 +13,7 @@ import 'pages/student_dashboard_page.dart';
 import 'pages/teacher_dashboard_page.dart';
 import 'pages/explainable_ai_feedback_page.dart';
 import 'pages/review_schedule_page.dart';
+import 'pages/student_teacher_messages_page.dart';
 import 'pages/email_verification_page.dart';
 import 'login_page.dart';
 import 'signup_page.dart';
@@ -70,6 +71,10 @@ class MyApp extends StatelessWidget {
         // ── Authenticated routes ──
         '/dashboard': (_) => const _RoleRouter(),
         '/student-dashboard': (_) => _StudentDashboardRoute(),
+        '/teacher-messages': (_) => const _StudentShellRoute(
+              activeSection: StudentNavSection.teacherMessages,
+              child: StudentTeacherMessagesPage(),
+            ),
         '/upload': (_) => const _StudentShellRoute(
               activeSection: StudentNavSection.uploadMaterial,
               child: UploadMaterialPage(),
@@ -239,6 +244,8 @@ class _StudentShellRoute extends StatelessWidget {
     switch (section) {
       case StudentNavSection.dashboard:
         return '/student-dashboard';
+      case StudentNavSection.teacherMessages:
+        return '/teacher-messages';
       case StudentNavSection.uploadMaterial:
         return '/upload';
       case StudentNavSection.aiFeedback:
