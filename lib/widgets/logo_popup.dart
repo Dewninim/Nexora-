@@ -309,7 +309,7 @@ class _LogoPopupState extends State<LogoPopup> with TickerProviderStateMixin {
                               style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 40,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                                 letterSpacing: -0.5,
                                 // explicitly no decoration
                                 decoration: TextDecoration.none,

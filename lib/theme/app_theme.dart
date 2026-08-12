@@ -6,11 +6,18 @@ class AppColors {
 
   // ── Brand Palette ──
   static const Color primary      = Color(0xFF0F172A); // Deep Slate Navy
+  static const Color sidebarNavy  = Color(0xFF060B19); // Midnight Deep Navy
   static const Color accent       = Color(0xFF2563EB); // Vibrant Royal Blue
   static const Color accentGradientStart = Color(0xFF3B82F6);
   static const Color accentGradientEnd   = Color(0xFF1D4ED8);
 
-  static const Color textDark     = Color(0xFF0F172A); // Slate 900
+  // ── Luxury Gold Palette ──
+  static const Color gold         = Color(0xFFD4AF37); // Champagne Gold
+  static const Color goldAccent   = Color(0xFFDFB24E); // Warm Metallic Gold
+  static const Color goldLight    = Color(0xFFFEF9EE); // Subtle Soft Gold Tint
+  static const Color goldBorder   = Color(0xFFE5C158); // Refined Gold Border
+
+  static const Color textDark     = Color(0xFF000000); // Pure Black #000000
   static const Color textMuted    = Color(0xFF64748B); // Slate 500
   static const Color textFaint    = Color(0xFF94A3B8); // Slate 400
   static const Color border       = Color(0xFFE2E8F0); // Slate 200
@@ -28,61 +35,67 @@ class AppColors {
   static const Color infoBg       = Color(0xFFF5F3FF); // Violet 50
 
   // ── Backgrounds ──
-  static const Color bgPage       = Color(0xFFF1F5F9);
+  static const Color bgPage       = Color(0xFFF3F5F9); // Premium Soft Off-White
   static const Color bgCard       = Colors.white;
 }
 
-/// STRICT TYPOGRAPHY HIERARCHY
-/// Use these exact styles everywhere for 100% consistency across Student & Teacher screens.
+/// STRICT UNIFIED TYPOGRAPHY HIERARCHY WITH OPEN SANS FONT FAMILY EXCLUSIVELY
 class AppText {
   AppText._();
 
-  // 1. PAGE TITLE (e.g., "Teacher Dashboard", "Student Dashboard") -> Always 24px Bold
-  static TextStyle get pageTitle => GoogleFonts.dmSans(
-      fontSize: 24, fontWeight: FontWeight.w800, color: AppColors.textDark, height: 1.25);
+  // 0. HERO & PAGE HEADINGS -> Open Sans 32px - 26px Bold
+  static TextStyle get heroSerif => GoogleFonts.openSans(
+      fontSize: 32, fontWeight: FontWeight.w700, color: AppColors.textDark, height: 1.2);
 
-  static TextStyle get display => pageTitle;
-  static TextStyle get h1 => pageTitle;
+  static TextStyle get pageTitleSerif => GoogleFonts.openSans(
+      fontSize: 26, fontWeight: FontWeight.w700, color: AppColors.textDark, height: 1.25);
+
+  // 1. PAGE TITLE -> 24px Bold
+  static TextStyle get pageTitle => GoogleFonts.openSans(
+      fontSize: 24, fontWeight: FontWeight.w700, color: AppColors.textDark, height: 1.25);
+
+  static TextStyle get display => heroSerif;
+  static TextStyle get h1 => pageTitleSerif;
   static TextStyle get h2 => sectionHeader;
   static TextStyle get h3 => cardTitle;
 
-  // 2. SECTION TOPIC / HEADER (e.g., "Recommended Now", "Student Help Requests") -> Always 18px Bold
-  static TextStyle get sectionHeader => GoogleFonts.dmSans(
+  // 2. SECTION TOPIC / HEADER -> 18px SemiBold
+  static TextStyle get sectionHeader => GoogleFonts.openSans(
       fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textDark, height: 1.3);
 
-  // 3. CARD TITLE / SUB-HEADER (e.g., Student Name, Concept Name, Metric Label) -> Always 15px SemiBold
-  static TextStyle get cardTitle => GoogleFonts.dmSans(
-      fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textDark, height: 1.35);
+  // 3. CARD TITLE / SUB-HEADER -> 15px SemiBold
+  static TextStyle get cardTitle => GoogleFonts.openSans(
+      fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textDark, height: 1.35);
 
-  // 4. PARAGRAPH / BODY TEXT (Standard readable description text) -> Always 13.5px Regular
-  static TextStyle get body => GoogleFonts.dmSans(
-      fontSize: 13.5, fontWeight: FontWeight.w400, color: AppColors.textDark, height: 1.55);
+  // 4. PARAGRAPH / BODY TEXT -> 14px Regular
+  static TextStyle get body => GoogleFonts.openSans(
+      fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.textDark, height: 1.5);
 
-  // 5. BODY MUTED (Subtitles, secondary descriptions) -> Always 13.5px Regular Faded
-  static TextStyle get bodyMuted => GoogleFonts.dmSans(
-      fontSize: 13.5, fontWeight: FontWeight.w400, color: AppColors.textMuted, height: 1.5);
+  // 5. BODY MUTED -> 14px Regular Muted
+  static TextStyle get bodyMuted => GoogleFonts.openSans(
+      fontSize: 14, fontWeight: FontWeight.w400, color: AppColors.textMuted, height: 1.5);
 
   static TextStyle get bodySmall => bodyMuted;
 
-  // 6. BODY MEDIUM / BOLD (Emphasized text inside paragraphs) -> Always 13.5px SemiBold
-  static TextStyle get bodyMedium => GoogleFonts.dmSans(
-      fontSize: 13.5, fontWeight: FontWeight.w600, color: AppColors.textDark, height: 1.5);
+  // 6. BODY MEDIUM -> 14px SemiBold
+  static TextStyle get bodyMedium => GoogleFonts.openSans(
+      fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textDark, height: 1.5);
 
-  // 7. CAPTION & BADGES (Timestamp, tags, status pills) -> Always 12px Medium
-  static TextStyle get caption => GoogleFonts.dmSans(
-      fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textMuted);
+  // 7. CAPTION & BADGES -> 12px SemiBold
+  static TextStyle get caption => GoogleFonts.openSans(
+      fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textMuted);
 
-  // 8. EYEBROW / SMALL LABEL (Upper-case section labels) -> Always 11px Bold Spaced
-  static TextStyle get eyebrow => GoogleFonts.dmSans(
+  // 8. EYEBROW / SMALL LABEL -> 11px Bold Spaced
+  static TextStyle get eyebrow => GoogleFonts.openSans(
       fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.textFaint, letterSpacing: 0.8);
 
-  // 9. METRIC / LARGE NUMBER -> 26px ExtraBold
-  static TextStyle get metricValue => GoogleFonts.dmSans(
-      fontSize: 26, fontWeight: FontWeight.w800, color: AppColors.textDark, height: 1.1);
+  // 9. METRIC / LARGE NUMBER -> 28px Bold
+  static TextStyle get metricValue => GoogleFonts.openSans(
+      fontSize: 28, fontWeight: FontWeight.w700, color: AppColors.textDark, height: 1.1);
 
-  // 10. BUTTON TEXT -> 13.5px Bold
-  static TextStyle get button => GoogleFonts.dmSans(
-      fontSize: 13.5, fontWeight: FontWeight.w700, color: Colors.white);
+  // 10. BUTTON TEXT -> 14px SemiBold
+  static TextStyle get button => GoogleFonts.openSans(
+      fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white);
 }
 
 class AppTheme {
@@ -99,8 +112,9 @@ class AppTheme {
       ),
       scaffoldBackgroundColor: AppColors.bgPage,
     );
+
     return base.copyWith(
-      textTheme: GoogleFonts.dmSansTextTheme(base.textTheme).apply(
+      textTheme: GoogleFonts.openSansTextTheme(base.textTheme).apply(
         bodyColor: AppColors.textDark,
         displayColor: AppColors.textDark,
       ),

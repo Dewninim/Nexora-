@@ -58,10 +58,10 @@ class EmailVerificationPage extends StatelessWidget {
                       const SizedBox(height: 80),
                       Text(
                         'Verify your email to\nactivate your account',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                           color: Colors.white,
                           fontSize: 36,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                           height: 1.2,
                         ),
                       ),
@@ -87,7 +87,7 @@ class EmailVerificationPage extends StatelessWidget {
                               const SizedBox(width: 12),
                               Text(
                                 s,
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.openSans(
                                   color: Colors.white,
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -138,17 +138,17 @@ class EmailVerificationPage extends StatelessWidget {
                       const SizedBox(height: 20),
                       Text(
                         'Verify your email',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                           color: AppColors.textDark,
                           fontSize: 26,
-                          fontWeight: FontWeight.w800,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 10),
                       Text(
                         'A verification link was sent to $email. Open the link, then return here and check the verification status.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                           color: AppColors.textMuted,
                           fontSize: 14,
                           height: 1.5,
@@ -159,7 +159,7 @@ class EmailVerificationPage extends StatelessWidget {
                         Text(
                           auth.errorMessage!,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                             color: AppColors.error,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -212,7 +212,7 @@ class EmailVerificationPage extends StatelessWidget {
                               : const Icon(Icons.refresh_rounded, size: 18),
                           label: Text(
                             'I have verified my email',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               fontWeight: FontWeight.w700,
                               fontSize: 15,
                             ),
@@ -245,7 +245,7 @@ class EmailVerificationPage extends StatelessWidget {
                                 },
                           child: Text(
                             'Resend verification email',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               color: AppColors.textDark,
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
@@ -268,7 +268,7 @@ class EmailVerificationPage extends StatelessWidget {
                               },
                         child: Text(
                           'Use another account',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                             color: AppColors.accent,
                             fontWeight: FontWeight.w700,
                             fontSize: 13,

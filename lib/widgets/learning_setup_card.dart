@@ -92,7 +92,7 @@ class _SetupState extends State<LearningSetupCard>
                       ),
                       const SizedBox(height: 14),
                       Text('File Successfully Uploaded',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                               fontSize: 20,
                               fontWeight: FontWeight.w700,
                               color: _textPrimary)),
@@ -100,7 +100,7 @@ class _SetupState extends State<LearningSetupCard>
                       Text(
                         'Your study materials have been processed.\nNow, let\'s customize your learning path.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                             fontSize: 13.5,
                             color: _textSub,
                             height: 1.55),
@@ -128,7 +128,7 @@ class _SetupState extends State<LearningSetupCard>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text('Learning Setup',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                                 fontSize: 17,
                                 fontWeight: FontWeight.w700,
                                 color: _textPrimary)),
@@ -194,17 +194,17 @@ class _SetupState extends State<LearningSetupCard>
                                           provider.setDays(d);
                                         }
                                       },
-                                      style: GoogleFonts.dmSans(
+                                      style: GoogleFonts.openSans(
                                           fontSize: 14,
                                           color: _textPrimary),
                                       decoration: InputDecoration(
                                         hintText: 'e.g.  30',
                                         hintStyle:
-                                            GoogleFonts.dmSans(
+                                            GoogleFonts.openSans(
                                                 color: _textMuted),
                                         suffixText: 'Days',
                                         suffixStyle:
-                                            GoogleFonts.dmSans(
+                                            GoogleFonts.openSans(
                                                 color: _textMuted,
                                                 fontSize: 13),
                                         filled: true,
@@ -275,7 +275,7 @@ class _SetupState extends State<LearningSetupCard>
                                     Expanded(
                                       child: Text(
                                         'Duration: Until mastery is achieved — AI will keep going until you\'re ready.',
-                                        style: GoogleFonts.dmSans(
+                                        style: GoogleFonts.openSans(
                                             fontSize: 13,
                                             color: _accentBlue,
                                             fontWeight:
@@ -312,7 +312,7 @@ class _SetupState extends State<LearningSetupCard>
                         Center(
                           child: Text(
                             'You can change these settings later in your dashboard.',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                                 fontSize: 12, color: _textMuted),
                           ),
                         ),
@@ -336,7 +336,7 @@ class _SetupState extends State<LearningSetupCard>
                     child: Center(
                       child: Text(
                         '© 2026 NuroMathix AI Learning. All rights reserved.',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                             fontSize: 11, color: _textMuted),
                       ),
                     ),
@@ -351,7 +351,7 @@ class _SetupState extends State<LearningSetupCard>
   }
 
   Widget _label(String t) => Text(t,
-      style: GoogleFonts.dmSans(
+      style: GoogleFonts.openSans(
           fontSize: 13,
           fontWeight: FontWeight.w600,
           color: _textSub));
@@ -433,7 +433,7 @@ class _ModeOptionState extends State<_ModeOption> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(widget.title,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                             fontSize: 13.5,
                             fontWeight: FontWeight.w600,
                             color: widget.selected
@@ -441,7 +441,7 @@ class _ModeOptionState extends State<_ModeOption> {
                                 : _textPrimary)),
                     const SizedBox(height: 3),
                     Text(widget.description,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                             fontSize: 12.5,
                             height: 1.45,
                             color: widget.selected
@@ -507,7 +507,7 @@ class _StartButtonState extends State<_StartButton> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text('Start Learning',
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                             fontSize: 15,
                             fontWeight: FontWeight.w600,
                             color: Colors.white)),
@@ -553,7 +553,7 @@ class _DifficultyExplanationPanel extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'Why we rated the hardest sections this way (SHAP)',
-                style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w700, color: _textPrimary),
+                style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w700, color: _textPrimary),
               ),
             ],
           ),
@@ -562,7 +562,7 @@ class _DifficultyExplanationPanel extends StatelessWidget {
             avgScore != null
                 ? 'Average difficulty ${avgScore!.toStringAsFixed(1)}/5 — feature attribution from Model 1\'s RandomForest classifier.'
                 : 'Feature attribution from Model 1\'s RandomForest classifier.',
-            style: GoogleFonts.dmSans(fontSize: 11.5, color: _textMuted),
+            style: GoogleFonts.openSans(fontSize: 11.5, color: _textMuted),
           ),
           const SizedBox(height: 12),
           Wrap(
@@ -586,7 +586,7 @@ class _DifficultyExplanationPanel extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${w['word']}',
-                      style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700, color: _textPrimary),
+                      style: GoogleFonts.openSans(fontSize: 12, fontWeight: FontWeight.w700, color: _textPrimary),
                     ),
                   ],
                 ),

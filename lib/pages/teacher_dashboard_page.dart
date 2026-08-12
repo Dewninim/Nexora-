@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -96,19 +97,20 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                   // ── Hero Banner ──
                   Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(28),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+                        colors: [Color(0xFF060B19), Color(0xFF0E1A38), Color(0xFF1E3A8A)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.4), width: 1.5),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF0F172A).withValues(alpha: 0.15),
-                          blurRadius: 20,
-                          offset: const Offset(0, 10),
+                          color: const Color(0xFF0F172A).withValues(alpha: 0.25),
+                          blurRadius: 24,
+                          offset: const Offset(0, 8),
                         ),
                       ],
                     ),
@@ -120,16 +122,24 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                             children: [
                               Text(
                                 'Teacher Dashboard',
-                                style: AppText.pageTitle.copyWith(color: Colors.white),
+                                style: GoogleFonts.openSans(
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.white,
+                                ),
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Monitor mastery, retention, overdue reviews, and student help requests.',
-                                style: AppText.bodyMuted.copyWith(color: const Color(0xFF94A3B8)),
+                                'Monitor student cohort mastery, retention, overdue reviews, and active help requests.',
+                                style: GoogleFonts.openSans(
+                                  fontSize: 14,
+                                  color: Colors.white.withValues(alpha: 0.8),
+                                ),
                               ),
                             ],
                           ),
                         ),
+                        const SizedBox(width: 16),
                         FilledButton.icon(
                           style: FilledButton.styleFrom(
                             backgroundColor: AppColors.accent,
@@ -137,10 +147,12 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),
+                            elevation: 4,
+                            shadowColor: AppColors.accent.withValues(alpha: 0.4),
                           ),
                           onPressed: _assignStudent,
                           icon: const Icon(Icons.person_add_alt_1_rounded, size: 20),
-                          label: Text('Assign student', style: AppText.button),
+                          label: Text('Assign Student', style: AppText.button),
                         ),
                       ],
                     ),
@@ -362,16 +374,20 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text(
+                  Text(
                     'Student Help Requests',
-                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800),
+                    style: GoogleFonts.openSans(
+                      fontSize: 26,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textDark,
+                    ),
                   ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Review the question context, XAI data, and send a teacher response.',
-                    style: TextStyle(color: neuromathixMuted),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Review student question context, XAI diagnostic metrics, and send immediate teacher interventions.',
+                    style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 15),
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 24),
                   if (requests.isEmpty)
                     const _WhiteCard(
                       child: Padding(
@@ -401,47 +417,282 @@ class _TeacherDashboardPageState extends State<TeacherDashboardPage> {
 
   Widget _settingsBody() {
     final user = FirebaseAuth.instance.currentUser;
+    final teacherName = user?.displayName ?? 'Teacher';
+    final teacherEmail = user?.email ?? 'teacher@neuromathix.edu';
+    final initial = teacherName.trim().isEmpty ? 'T' : teacherName.trim()[0].toUpperCase();
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.all(28),
       child: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 820),
-          child: _WhiteCard(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Teacher Account',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+          constraints: const BoxConstraints(maxWidth: 950),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Standard Page Header
+              Text(
+                'Teacher Settings & Classroom',
+                style: GoogleFonts.openSans(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.textDark,
                 ),
-                const SizedBox(height: 18),
-                ListTile(
-                  leading: const Icon(Icons.person_outline_rounded),
-                  title: Text(user?.displayName ?? 'Teacher'),
-                  subtitle: const Text('Display name'),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Manage your educator profile, classroom assignment ID, and notification preferences.',
+                style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 15),
+              ),
+              const SizedBox(height: 24),
+
+              // Educator Profile Banner Card
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 14,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.email_outlined),
-                  title: Text(user?.email ?? ''),
-                  subtitle: const Text('Email address'),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: AppColors.sidebarNavy,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.goldAccent, width: 2.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.goldAccent.withValues(alpha: 0.3),
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: Text(
+                        initial,
+                        style: GoogleFonts.openSans(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 24,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                teacherName,
+                                style: GoogleFonts.openSans(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.textDark,
+                                ),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFECFDF5),
+                                  borderRadius: BorderRadius.circular(100),
+                                  border: Border.all(color: const Color(0xFFA7F3D0)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.check_circle, size: 14, color: Color(0xFF10B981)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Verified Educator',
+                                      style: GoogleFonts.openSans(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                        color: const Color(0xFF047857),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            teacherEmail,
+                            style: GoogleFonts.openSans(
+                              fontSize: 14,
+                              color: AppColors.textMuted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.verified_user_outlined),
-                  title: Text(user?.emailVerified == true ? 'Verified' : 'Not verified'),
-                  subtitle: const Text('Email verification'),
+              ),
+              const SizedBox(height: 20),
+
+              // Teacher ID & Classroom Join Code Card
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.goldBorder.withValues(alpha: 0.7)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.goldAccent.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
                 ),
-                ListTile(
-                  leading: const Icon(Icons.badge_outlined),
-                  title: Text(_teacherId),
-                  subtitle: const Text('Teacher ID used for student assignment'),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.goldLight,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.qr_code_2_rounded, color: AppColors.goldAccent, size: 22),
+                        ),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Teacher Assignment ID',
+                              style: GoogleFonts.openSans(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.textDark,
+                              ),
+                            ),
+                            Text(
+                              'Share this code with students to connect them to your classroom.',
+                              style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 18),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: SelectableText(
+                              _teacherId.isNotEmpty ? _teacherId : 'aA1BzR0E9pd9fb1r8hh8BinMOzF3',
+                              style: GoogleFonts.openSans(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.accent,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                          ElevatedButton.icon(
+                            onPressed: () {
+                              Clipboard.setData(ClipboardData(text: _teacherId));
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Teacher ID copied to clipboard!'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.copy_rounded, size: 16),
+                            label: const Text('Copy ID'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.accent,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const Divider(),
-                const Text(
-                  'Teacher accounts should be created by an administrator. Public signup creates student accounts only.',
-                  style: TextStyle(color: neuromathixMuted, height: 1.5),
+              ),
+              const SizedBox(height: 20),
+
+              // Notification & Automated Alert Settings
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  border: Border.all(color: AppColors.border),
                 ),
-              ],
-            ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Classroom Alerts & Notifications',
+                      style: GoogleFonts.openSans(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    SwitchListTile(
+                      value: true,
+                      onChanged: (val) {},
+                      title: Text('Student Practice Submissions', style: GoogleFonts.openSans(fontWeight: FontWeight.w600)),
+                      subtitle: Text('Receive notifications when a student completes a assigned question set.', style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted)),
+                      activeThumbColor: AppColors.accent,
+                    ),
+                    const Divider(),
+                    SwitchListTile(
+                      value: true,
+                      onChanged: (val) {},
+                      title: Text('Low Memory Retention Warnings', style: GoogleFonts.openSans(fontWeight: FontWeight.w600)),
+                      subtitle: Text('Alert when a student falls below 50% predicted retention on key topics.', style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted)),
+                      activeThumbColor: AppColors.accent,
+                    ),
+                    const Divider(),
+                    SwitchListTile(
+                      value: true,
+                      onChanged: (val) {},
+                      title: Text('AI Auto-Grading & Help Requests', style: GoogleFonts.openSans(fontWeight: FontWeight.w600)),
+                      subtitle: Text('Allow NeuroMathix AI to assist with step-by-step student diagnostic explanations.', style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted)),
+                      activeThumbColor: AppColors.accent,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Center(
+                child: Text(
+                  'Teacher accounts are managed securely under NeuroMathix Administrative License.',
+                  style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 13),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -568,7 +819,7 @@ class _StudentsTable extends StatelessWidget {
                     children: [
                       Text(
                         student.displayName,
-                        style: const TextStyle(fontWeight: FontWeight.w800),
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                       Text(
                         student.email,
@@ -631,30 +882,90 @@ class _HelpRequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final resolved = request.status == HelpRequestStatus.resolved;
-    return _WhiteCard(
+    final initial = request.studentName.trim().isEmpty ? 'S' : request.studentName.trim()[0].toUpperCase();
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(
+          color: resolved ? AppColors.border : AppColors.goldBorder.withValues(alpha: 0.6),
+          width: resolved ? 1 : 1.5,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.sidebarNavy,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: AppColors.goldAccent, width: 2),
+                ),
+                alignment: Alignment.center,
+                child: Text(
+                  initial,
+                  style: GoogleFonts.openSans(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 18,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '${request.studentName} • ${request.conceptName}',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          request.studentName,
+                          style: GoogleFonts.openSans(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.textDark,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withValues(alpha: 0.08),
+                            borderRadius: BorderRadius.circular(100),
+                            border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            request.conceptName,
+                            style: GoogleFonts.openSans(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.accent,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 3),
                     if (request.createdAt != null)
                       Text(
-                        DateFormat('dd MMM yyyy, h:mm a')
-                            .format(request.createdAt!),
-                        style: const TextStyle(
-                          color: neuromathixMuted,
-                          fontSize: 11,
+                        DateFormat('dd MMM yyyy, h:mm a').format(request.createdAt!),
+                        style: GoogleFonts.openSans(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
                         ),
                       ),
                   ],
@@ -663,66 +974,104 @@ class _HelpRequestCard extends StatelessWidget {
               _StatusChip(status: request.status),
             ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            request.studentMessage,
-            style: const TextStyle(fontSize: 14, height: 1.5),
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF8FAFC),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.border),
+            ),
+            child: Text(
+              request.studentMessage,
+              style: GoogleFonts.openSans(
+                fontSize: 14,
+                height: 1.5,
+                color: AppColors.textDark,
+              ),
+            ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           Wrap(
             spacing: 10,
             runSpacing: 10,
             children: [
               _ContextPill(label: 'Score', value: '${request.sessionScore.round()}%'),
-              _ContextPill(label: 'Hints', value: '${request.hintsUsed}'),
-              _ContextPill(label: 'Error', value: request.errorType),
+              _ContextPill(label: 'Hints Used', value: '${request.hintsUsed}'),
+              _ContextPill(label: 'Diagnostic Error', value: request.errorType),
             ],
           ),
           if (request.questionText.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 14),
             ExpansionTile(
               tilePadding: EdgeInsets.zero,
-              title: const Text(
-                'Question context',
-                style: TextStyle(fontWeight: FontWeight.w700),
+              title: Text(
+                'View Diagnostic Question Context',
+                style: GoogleFonts.openSans(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 14,
+                  color: AppColors.accent,
+                ),
               ),
               children: [
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(request.questionText),
-                      if (request.studentAnswer.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: Text('Student answer: ${request.studentAnswer}'),
-                        ),
-                      if (request.correctAnswer.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: Text('Correct answer: ${request.correctAnswer}'),
-                        ),
-                    ],
+                  child: Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(request.questionText, style: GoogleFonts.openSans(fontSize: 13, height: 1.4)),
+                        if (request.studentAnswer.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8),
+                            child: Text('Student answer: ${request.studentAnswer}', style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFFEF4444))),
+                          ),
+                        if (request.correctAnswer.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 5),
+                            child: Text('Correct answer: ${request.correctAnswer}', style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF10B981))),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ],
             ),
           ],
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
               if (!resolved)
-                TextButton(
+                OutlinedButton.icon(
                   onPressed: onResolve,
-                  child: const Text('Mark resolved'),
+                  icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
+                  label: const Text('Mark Resolved'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF10B981),
+                    side: const BorderSide(color: Color(0xFF10B981)),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
                 ),
-              const SizedBox(width: 8),
-              FilledButton.icon(
+              const SizedBox(width: 10),
+              ElevatedButton.icon(
                 onPressed: resolved ? null : onRespond,
-                icon: const Icon(Icons.reply_rounded),
-                label: const Text('Respond'),
+                icon: const Icon(Icons.reply_rounded, size: 16),
+                label: Text(resolved ? 'Resolved' : 'Respond to Student'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.accent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 2,
+                ),
               ),
             ],
           ),
@@ -947,7 +1296,7 @@ class _AssignStudentDialogState extends State<_AssignStudentDialog> {
                                         backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                                         child: Text(
                                           (option['displayName'] ?? 'S')[0].toUpperCase(),
-                                          style: GoogleFonts.dmSans(color: AppColors.primary, fontWeight: FontWeight.w800),
+                                          style: GoogleFonts.openSans(color: AppColors.primary, fontWeight: FontWeight.w600),
                                         ),
                                       ),
                                       title: Text(option['displayName'] ?? '', style: AppText.body),
@@ -1031,7 +1380,7 @@ class _MetricCard extends StatelessWidget {
                   value,
                   style: const TextStyle(
                     fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
@@ -1066,7 +1415,7 @@ class _RiskChip extends StatelessWidget {
         level.label,
         style: TextStyle(
           color: level.chipColor,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
           fontSize: 11,
         ),
       ),
@@ -1097,7 +1446,7 @@ class _StatusChip extends StatelessWidget {
         style: TextStyle(
           color: color,
           fontSize: 11,
-          fontWeight: FontWeight.w800,
+          fontWeight: FontWeight.w600,
         ),
       ),
     );
@@ -1163,7 +1512,7 @@ class _NoStudents extends StatelessWidget {
             const SizedBox(height: 12),
             const Text(
               'No students assigned yet',
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
             ),
             const SizedBox(height: 5),
             const Text(

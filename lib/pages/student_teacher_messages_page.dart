@@ -42,16 +42,16 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                       children: [
                         Text(
                           'Teacher Messages & Assigned Work',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                             fontSize: 26,
-                            fontWeight: FontWeight.w800,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.textDark,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           'Review instructions, study notes, and custom practice questions sent by your teacher.',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                             fontSize: 14,
                             color: AppColors.textMuted,
                           ),
@@ -99,7 +99,7 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                               const SizedBox(height: 16),
                               Text(
                                 'No messages from your teacher yet',
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.openSans(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
                                   color: AppColors.textDark,
@@ -109,7 +109,7 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                               Text(
                                 'When your teacher assigns custom practice questions or sends study notes, they will appear here.',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.dmSans(
+                                style: GoogleFonts.openSans(
                                   fontSize: 14,
                                   color: AppColors.textMuted,
                                 ),
@@ -129,6 +129,7 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                                 final message = data['message']?.toString() ?? '';
                                 final practice = data['practiceQuestion']?.toString();
                                 final ts = data['createdAt'] as Timestamp?;
+                                final isDone = data['isDone'] as bool? ?? data['isRead'] as bool? ?? false;
                                 final dateStr = ts == null
                                     ? 'Recently'
                                     : '${ts.toDate().day}/${ts.toDate().month}/${ts.toDate().year}';
@@ -139,7 +140,7 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                                   decoration: BoxDecoration(
                                     color: Colors.white,
                                     borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(color: AppColors.border),
+                                    border: Border.all(color: isDone ? const Color(0xFF86EFAC) : AppColors.border),
                                     boxShadow: [
                                       BoxShadow(
                                         color: Colors.black.withValues(alpha: 0.03),
@@ -161,9 +162,9 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                                           const SizedBox(width: 10),
                                           Text(
                                             subject,
-                                            style: GoogleFonts.dmSans(
+                                            style: GoogleFonts.openSans(
                                               fontSize: 17,
-                                              fontWeight: FontWeight.w800,
+                                              fontWeight: FontWeight.w600,
                                               color: AppColors.textDark,
                                             ),
                                           ),
@@ -179,7 +180,7 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                                             ),
                                             child: Text(
                                               dateStr,
-                                              style: GoogleFonts.dmSans(
+                                              style: GoogleFonts.openSans(
                                                 fontSize: 12,
                                                 fontWeight: FontWeight.w600,
                                                 color: AppColors.textMuted,
@@ -191,7 +192,7 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                                       const SizedBox(height: 12),
                                       Text(
                                         message,
-                                        style: GoogleFonts.dmSans(
+                                        style: GoogleFonts.openSans(
                                           fontSize: 14.5,
                                           color: AppColors.textDark,
                                           height: 1.5,
@@ -220,9 +221,9 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                                                   const SizedBox(width: 8),
                                                   Text(
                                                     'Assigned Practice Question:',
-                                                    style: GoogleFonts.dmSans(
+                                                    style: GoogleFonts.openSans(
                                                       fontSize: 13.5,
-                                                      fontWeight: FontWeight.w800,
+                                                      fontWeight: FontWeight.w600,
                                                       color: AppColors.primary,
                                                     ),
                                                   ),
@@ -231,7 +232,7 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                                               const SizedBox(height: 8),
                                               Text(
                                                 practice,
-                                                style: GoogleFonts.dmSans(
+                                                style: GoogleFonts.openSans(
                                                   fontSize: 14,
                                                   color: const Color(0xFF1E3A8A),
                                                   height: 1.5,
@@ -241,6 +242,57 @@ class StudentTeacherMessagesPage extends StatelessWidget {
                                           ),
                                         ),
                                       ],
+                                      const SizedBox(height: 18),
+                                      Row(
+                                        children: [
+                                          if (isDone) ...[
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                              decoration: BoxDecoration(
+                                                color: const Color(0xFFDCFCE7),
+                                                borderRadius: BorderRadius.circular(10),
+                                                border: Border.all(color: const Color(0xFF86EFAC)),
+                                              ),
+                                              child: Row(
+                                                mainAxisSize: MainAxisSize.min,
+                                                children: [
+                                                  const Icon(Icons.check_circle_rounded, size: 16, color: Color(0xFF166534)),
+                                                  const SizedBox(width: 6),
+                                                  Text(
+                                                    'Completed / Mark as Done',
+                                                    style: GoogleFonts.openSans(
+                                                      fontSize: 13,
+                                                      fontWeight: FontWeight.w700,
+                                                      color: const Color(0xFF166534),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                          ] else ...[
+                                            ElevatedButton.icon(
+                                              onPressed: () async {
+                                                await doc.reference.update({
+                                                  'isDone': true,
+                                                  'isRead': true,
+                                                  'completedAt': FieldValue.serverTimestamp(),
+                                                });
+                                              },
+                                              icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
+                                              label: Text(
+                                                'Mark as Done',
+                                                style: GoogleFonts.openSans(fontWeight: FontWeight.w700, fontSize: 13),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: AppColors.primary,
+                                                foregroundColor: Colors.white,
+                                                padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+                                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
+                                      ),
                                     ],
                                   ),
                                 );

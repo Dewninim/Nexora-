@@ -63,8 +63,8 @@ class _SignupPageState extends State<SignupPage> {
                 ]),
                 const SizedBox(height: 80),
                 Text('Start your journey to\nmathematical mastery',
-                  style: GoogleFonts.dmSans(color: Colors.white, fontSize: 36,
-                      fontWeight: FontWeight.w800, height: 1.2)),
+                  style: GoogleFonts.openSans(color: Colors.white, fontSize: 36,
+                      fontWeight: FontWeight.w600, height: 1.2)),
                 const SizedBox(height: 32),
                 ...['AI that adapts to your learning pace',
                   "Never forget what you've learned",
@@ -75,7 +75,7 @@ class _SignupPageState extends State<SignupPage> {
                       Container(width: 6, height: 6,
                           decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
                       const SizedBox(width: 12),
-                      Text(s, style: GoogleFonts.dmSans(color: Colors.white,
+                      Text(s, style: GoogleFonts.openSans(color: Colors.white,
                           fontSize: 16, fontWeight: FontWeight.w600)),
                     ]))),
               ]))),
@@ -90,11 +90,11 @@ class _SignupPageState extends State<SignupPage> {
                     blurRadius: 40, offset: const Offset(0, 16))]),
               child: SingleChildScrollView(
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Create your account', style: GoogleFonts.dmSans(color: AppColors.textDark,
-                      fontSize: 28, fontWeight: FontWeight.w800)),
+                  Text('Create your account', style: GoogleFonts.openSans(color: AppColors.textDark,
+                      fontSize: 28, fontWeight: FontWeight.w600)),
                   const SizedBox(height: 6),
                   Text('Join thousands of learners improving with AI',
-                      style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 14)),
+                      style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 14)),
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -105,7 +105,7 @@ class _SignupPageState extends State<SignupPage> {
                       const SizedBox(width: 10),
                       Expanded(child: Text(
                         'Signing up here creates a student account. Teacher accounts are set up by an administrator.',
-                        style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 12.5))),
+                        style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 12.5))),
                     ])),
                   const SizedBox(height: 20),
                   _label('Full name'), const SizedBox(height: 6),
@@ -123,7 +123,7 @@ class _SignupPageState extends State<SignupPage> {
                           color: AppColors.textFaint, size: 20))),
                   const SizedBox(height: 6),
                   Text('Must be at least 8 characters',
-                      style: GoogleFonts.dmSans(color: AppColors.textFaint, fontSize: 12)),
+                      style: GoogleFonts.openSans(color: AppColors.textFaint, fontSize: 12)),
                   const SizedBox(height: 20),
                   SizedBox(width: double.infinity, height: 50,
                     child: ElevatedButton(
@@ -135,16 +135,16 @@ class _SignupPageState extends State<SignupPage> {
                       child: auth.isLoading
                         ? const SizedBox(width: 20, height: 20,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                        : Text('Create account →', style: GoogleFonts.dmSans(color: Colors.white,
+                        : Text('Create account →', style: GoogleFonts.openSans(color: Colors.white,
                             fontWeight: FontWeight.w700, fontSize: 15)))),
                   const SizedBox(height: 16),
                   Center(child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                     Text('Already have an account? ',
-                        style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 14)),
+                        style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 14)),
                     GestureDetector(
                       onTap: () => Navigator.pushReplacement(
                           context, MaterialPageRoute(builder: (_) => LoginPage())),
-                      child: Text('Sign in', style: GoogleFonts.dmSans(color: AppColors.accent,
+                      child: Text('Sign in', style: GoogleFonts.openSans(color: AppColors.accent,
                           fontWeight: FontWeight.w700, fontSize: 14))),
                   ])),
                 ])))),
@@ -153,14 +153,14 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Widget _label(String t) => Text(t,
-    style: GoogleFonts.dmSans(color: AppColors.textDark, fontWeight: FontWeight.w500, fontSize: 14));
+    style: GoogleFonts.openSans(color: AppColors.textDark, fontWeight: FontWeight.w500, fontSize: 14));
 
   Widget _field({required TextEditingController controller, required String hint,
       bool obscure = false, Widget? suffix}) {
     return TextField(controller: controller, obscureText: obscure,
-      style: GoogleFonts.dmSans(color: AppColors.textDark, fontSize: 15),
+      style: GoogleFonts.openSans(color: AppColors.textDark, fontSize: 15),
       decoration: InputDecoration(hintText: hint,
-        hintStyle: GoogleFonts.dmSans(color: AppColors.textFaint),
+        hintStyle: GoogleFonts.openSans(color: AppColors.textFaint),
         suffixIcon: suffix != null ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix) : null,
         suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
         filled: true, fillColor: Colors.white,

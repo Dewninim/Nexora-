@@ -40,7 +40,7 @@ class TeacherAppShell extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final w = constraints.maxWidth;
-        final isCompact = w < 760;
+        final isCompact = w < 600;
 
         if (isCompact) {
           return Scaffold(
@@ -63,8 +63,8 @@ class TeacherAppShell extends StatelessWidget {
               centerTitle: false,
               title: Text(
                 'Hi, $userName',
-                style: GoogleFonts.dmSans(
-                  fontWeight: FontWeight.w800,
+                style: GoogleFonts.openSans(
+                  fontWeight: FontWeight.w600,
                   color: AppColors.textDark,
                 ),
               ),
@@ -135,19 +135,60 @@ class TeacherTopBar extends StatelessWidget {
         return Container(
           height: isSmall ? 56 : 64,
           padding: EdgeInsets.symmetric(horizontal: isSmall ? 18 : 44),
-          decoration: const BoxDecoration(
+          decoration: BoxDecoration(
             color: Colors.white,
-            border: Border(bottom: BorderSide(color: neuromathixBorder)),
+            border: const Border(bottom: BorderSide(color: AppColors.border)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.02),
+                blurRadius: 10,
+                offset: const Offset(0, 3),
+              ),
+            ],
           ),
           child: Row(
             children: [
-              Text(
-                'Hi, $userName',
-                style: GoogleFonts.dmSans(
-                  fontSize: isSmall ? 22 : 28,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textDark,
-                ),
+              Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        'Welcome, $userName',
+                        style: GoogleFonts.openSans(
+                          fontSize: isSmall ? 18 : 22,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textDark,
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF10B981).withValues(alpha: 0.5),
+                              blurRadius: 6,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'NeuroMathix Teacher Analytics & Classroom Command',
+                    style: GoogleFonts.openSans(
+                      fontSize: 12,
+                      color: AppColors.textMuted,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ),
               const Spacer(),
               NotificationBell(
@@ -190,10 +231,9 @@ class TeacherSidebar extends StatelessWidget {
       _SidebarItem(TeacherNavSection.helpRequests, Icons.support_agent_rounded, 'Help Requests'),
       _SidebarItem(TeacherNavSection.settings, Icons.settings_outlined, 'Settings'),
     ];
-
     return Container(
       width: expanded ? 260 : 128,
-      color: neuromathixNavy,
+      color: AppColors.sidebarNavy,
       child: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -209,14 +249,21 @@ class TeacherSidebar extends StatelessWidget {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.asset(
-                              'assets/images/neuromathix_logo.png',
-                              width: 40,
-                              height: 40,
-                              errorBuilder: (_, __, ___) => const Icon(
-                                Icons.psychology_outlined,
-                                color: Colors.white,
-                                size: 34,
+                            Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(color: AppColors.goldAccent.withValues(alpha: 0.6), width: 1.5),
+                              ),
+                              child: Image.asset(
+                                'assets/images/neuromathix_logo.png',
+                                width: 38,
+                                height: 38,
+                                errorBuilder: (_, __, ___) => const Icon(
+                                  Icons.psychology_outlined,
+                                  color: Colors.white,
+                                  size: 34,
+                                ),
                               ),
                             ),
                             if (expanded) ...[
@@ -224,11 +271,11 @@ class TeacherSidebar extends StatelessWidget {
                               Expanded(
                                 child: Text(
                                   'NEUROMATHIX',
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.openSans(
                                     color: Colors.white,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w600,
                                     fontSize: 14,
-                                    letterSpacing: 1,
+                                    letterSpacing: 1.2,
                                   ),
                                 ),
                               ),
@@ -240,15 +287,15 @@ class TeacherSidebar extends StatelessWidget {
                         const SizedBox(height: 6),
                         Text(
                           'NEUROMATHIX',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                             color: Colors.white,
                             fontSize: 11,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.6,
                           ),
                         ),
                       ],
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                       for (final item in items)
                         _SidebarButton(
                           item: item,
@@ -261,7 +308,7 @@ class TeacherSidebar extends StatelessWidget {
                         expanded: expanded,
                         onTap: () => _logout(context),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -270,54 +317,6 @@ class TeacherSidebar extends StatelessWidget {
           },
         ),
       ),
-    );
-  }
-}
-
-class _SidebarLogoutButton extends StatelessWidget {
-  final bool expanded;
-  final VoidCallback onTap;
-
-  const _SidebarLogoutButton({
-    required this.expanded,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final content = Container(
-      width: expanded ? double.infinity : 54,
-      height: 54,
-      margin: EdgeInsets.symmetric(horizontal: expanded ? 14 : 0),
-      padding: EdgeInsets.symmetric(horizontal: expanded ? 16 : 0),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(9),
-      ),
-      child: Row(
-        mainAxisAlignment: expanded
-            ? MainAxisAlignment.start
-            : MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.logout_rounded, color: Colors.white, size: 26),
-          if (expanded) ...[
-            const SizedBox(width: 14),
-            Text(
-              'Logout',
-              style: GoogleFonts.dmSans(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-
-    return Tooltip(
-      message: 'Logout',
-      child: InkWell(onTap: onTap, child: content),
     );
   }
 }
@@ -340,20 +339,38 @@ class _SidebarButton extends StatelessWidget {
     final content = AnimatedContainer(
       duration: const Duration(milliseconds: 160),
       width: expanded ? double.infinity : 54,
-      height: 54,
-      margin: EdgeInsets.symmetric(horizontal: expanded ? 14 : 0, vertical: 9),
+      height: 52,
+      margin: EdgeInsets.symmetric(horizontal: expanded ? 14 : 0, vertical: 6),
       padding: EdgeInsets.symmetric(horizontal: expanded ? 16 : 0),
       decoration: BoxDecoration(
-        color: selected ? neuromathixBlue : Colors.transparent,
-        borderRadius: BorderRadius.circular(9),
+        color: selected ? AppColors.accent : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: selected
+            ? [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.45),
+                  blurRadius: 14,
+                  offset: const Offset(0, 4),
+                ),
+              ]
+            : null,
       ),
       child: Row(
-        mainAxisAlignment: expanded ? MainAxisAlignment.start : MainAxisAlignment.center,
+        mainAxisAlignment: expanded
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.center,
         children: [
-          Icon(item.icon, color: Colors.white, size: 28),
+          Icon(item.icon, color: Colors.white, size: 26),
           if (expanded) ...[
             const SizedBox(width: 14),
-            Text(item.label, style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 14)),
+            Text(
+              item.label,
+              style: GoogleFonts.openSans(
+                color: Colors.white,
+                fontWeight: selected ? FontWeight.w600 : FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
           ],
         ],
       ),
@@ -370,12 +387,62 @@ class _SidebarItem {
   final TeacherNavSection section;
   final IconData icon;
   final String label;
+
   const _SidebarItem(this.section, this.icon, this.label);
+}
+
+class _SidebarLogoutButton extends StatelessWidget {
+  final bool expanded;
+  final VoidCallback onTap;
+
+  const _SidebarLogoutButton({
+    required this.expanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final content = Container(
+      width: expanded ? double.infinity : 54,
+      height: 52,
+      margin: EdgeInsets.symmetric(horizontal: expanded ? 14 : 0),
+      padding: EdgeInsets.symmetric(horizontal: expanded ? 16 : 0),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisAlignment: expanded
+            ? MainAxisAlignment.start
+            : MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.logout_rounded, color: Colors.white, size: 24),
+          if (expanded) ...[
+            const SizedBox(width: 14),
+            Text(
+              'Logout',
+              style: GoogleFonts.openSans(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+
+    return Tooltip(
+      message: 'Logout',
+      child: InkWell(onTap: onTap, child: content),
+    );
+  }
 }
 
 class NotificationBell extends StatelessWidget {
   final int count;
   final VoidCallback? onTap;
+
   const NotificationBell({super.key, required this.count, this.onTap});
 
   @override
@@ -384,25 +451,25 @@ class NotificationBell extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(24),
       child: SizedBox(
-        width: 48,
-        height: 48,
+        width: 44,
+        height: 44,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
             const Align(
               alignment: Alignment.center,
-              child: Icon(Icons.notifications_none_rounded, size: 32, color: Colors.black),
+              child: Icon(Icons.notifications_none_rounded, size: 26, color: AppColors.textDark),
             ),
             if (count > 0)
               Positioned(
-                right: 0,
-                top: 0,
+                right: 2,
+                top: 2,
                 child: Container(
-                  width: 26,
-                  height: 26,
+                  width: 20,
+                  height: 20,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(16)),
-                  child: Text('$count', style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 16)),
+                  decoration: BoxDecoration(color: AppColors.error, borderRadius: BorderRadius.circular(10)),
+                  child: Text('$count', style: GoogleFonts.openSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 11)),
                 ),
               ),
           ],
@@ -429,16 +496,24 @@ class UserInitialAvatar extends StatelessWidget {
       child: Tooltip(
         message: 'Signed in as $userName',
         child: Container(
-          width: 46,
-          height: 46,
-          decoration: const BoxDecoration(
-            color: AppColors.primary,
+          width: 42,
+          height: 42,
+          decoration: BoxDecoration(
+            color: AppColors.sidebarNavy,
             shape: BoxShape.circle,
+            border: Border.all(color: AppColors.goldAccent, width: 2),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.goldAccent.withValues(alpha: 0.25),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           alignment: Alignment.center,
           child: Text(
             initial,
-            style: GoogleFonts.dmSans(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18),
+            style: GoogleFonts.openSans(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
           ),
         ),
       ),
@@ -454,9 +529,9 @@ class UserInitialAvatar extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(userName, style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, color: AppColors.textDark, fontSize: 14)),
+              Text(userName, style: GoogleFonts.openSans(fontWeight: FontWeight.w600, color: AppColors.textDark, fontSize: 14)),
               if (email.isNotEmpty)
-                Text(email, style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 12)),
+                Text(email, style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 12)),
               const SizedBox(height: 6),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -464,7 +539,7 @@ class UserInitialAvatar extends StatelessWidget {
                   color: AppColors.accent.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(6),
                 ),
-                child: Text('Approved Teacher', style: GoogleFonts.dmSans(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w700)),
+                child: Text('Approved Teacher', style: GoogleFonts.openSans(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.w700)),
               ),
             ],
           ),
@@ -476,7 +551,7 @@ class UserInitialAvatar extends StatelessWidget {
             children: [
               const Icon(Icons.logout_rounded, color: AppColors.error, size: 18),
               const SizedBox(width: 10),
-              Text('Sign Out', style: GoogleFonts.dmSans(color: AppColors.error, fontWeight: FontWeight.w700, fontSize: 13)),
+              Text('Sign Out', style: GoogleFonts.openSans(color: AppColors.error, fontWeight: FontWeight.w700, fontSize: 13)),
             ],
           ),
         ),

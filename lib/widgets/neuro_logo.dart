@@ -43,7 +43,7 @@ class NeuroMathixLogo extends StatelessWidget {
               style: TextStyle(
                 color: fg,
                 fontSize: titleSize,
-                fontWeight: FontWeight.w800,
+                fontWeight: FontWeight.w600,
                 height: 1,
               ),
             ),

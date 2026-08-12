@@ -58,8 +58,8 @@ class _LoginPageState extends State<LoginPage> {
                   ]),
                   const SizedBox(height: 80),
                   Text('Start your journey to\nmathematical mastery',
-                    style: GoogleFonts.dmSans(color: Colors.white, fontSize: 36,
-                        fontWeight: FontWeight.w800, height: 1.2)),
+                    style: GoogleFonts.openSans(color: Colors.white, fontSize: 36,
+                        fontWeight: FontWeight.w600, height: 1.2)),
                   const SizedBox(height: 32),
                   ...['AI that adapts to your learning pace',
                     "Never forget what you've learned",
@@ -70,7 +70,7 @@ class _LoginPageState extends State<LoginPage> {
                         Container(width: 6, height: 6,
                             decoration: const BoxDecoration(shape: BoxShape.circle, color: Colors.white)),
                         const SizedBox(width: 12),
-                        Text(s, style: GoogleFonts.dmSans(color: Colors.white,
+                        Text(s, style: GoogleFonts.openSans(color: Colors.white,
                             fontSize: 16, fontWeight: FontWeight.w600)),
                       ]))),
                 ]))),
@@ -86,11 +86,11 @@ class _LoginPageState extends State<LoginPage> {
                 child: Column(mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Sign in', style: GoogleFonts.dmSans(color: AppColors.textDark,
-                        fontSize: 28, fontWeight: FontWeight.w800)),
+                    Text('Sign in', style: GoogleFonts.openSans(color: AppColors.textDark,
+                        fontSize: 28, fontWeight: FontWeight.w600)),
                     const SizedBox(height: 6),
                     Text('Enter your credentials to continue',
-                        style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 14)),
+                        style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 14)),
                     const SizedBox(height: 28),
                     _label('Email address'),
                     const SizedBox(height: 6),
@@ -115,11 +115,11 @@ class _LoginPageState extends State<LoginPage> {
                         child: auth.isLoading
                           ? const SizedBox(width: 20, height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                          : Text('Sign in →', style: GoogleFonts.dmSans(color: Colors.white,
+                          : Text('Sign in →', style: GoogleFonts.openSans(color: Colors.white,
                               fontWeight: FontWeight.w700, fontSize: 15)))),
                     const SizedBox(height: 20),
                     Center(child: Text('New to NeuroMathix?',
-                        style: GoogleFonts.dmSans(color: AppColors.textMuted, fontSize: 14))),
+                        style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 14))),
                     const SizedBox(height: 10),
                     SizedBox(width: double.infinity, height: 50,
                       child: OutlinedButton(
@@ -128,7 +128,7 @@ class _LoginPageState extends State<LoginPage> {
                         style: OutlinedButton.styleFrom(
                           side: const BorderSide(color: AppColors.accent, width: 1.5),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30))),
-                        child: Text('Create account →', style: GoogleFonts.dmSans(
+                        child: Text('Create account →', style: GoogleFonts.openSans(
                             color: AppColors.accent, fontWeight: FontWeight.w700, fontSize: 15)))),
                   ]))),
           ]),
@@ -138,14 +138,14 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Widget _label(String t) => Text(t,
-    style: GoogleFonts.dmSans(color: AppColors.textDark, fontWeight: FontWeight.w500, fontSize: 14));
+    style: GoogleFonts.openSans(color: AppColors.textDark, fontWeight: FontWeight.w500, fontSize: 14));
 
   Widget _field({required TextEditingController controller, required String hint,
       bool obscure = false, Widget? suffix}) {
     return TextField(controller: controller, obscureText: obscure,
-      style: GoogleFonts.dmSans(color: AppColors.textDark, fontSize: 15),
+      style: GoogleFonts.openSans(color: AppColors.textDark, fontSize: 15),
       decoration: InputDecoration(hintText: hint,
-        hintStyle: GoogleFonts.dmSans(color: AppColors.textFaint),
+        hintStyle: GoogleFonts.openSans(color: AppColors.textFaint),
         suffixIcon: suffix != null ? Padding(padding: const EdgeInsets.only(right: 12), child: suffix) : null,
         suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
         filled: true, fillColor: Colors.white,

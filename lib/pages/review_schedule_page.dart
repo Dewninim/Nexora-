@@ -60,7 +60,6 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
       final list = (data['materials'] as List? ?? []).cast<Map<String, dynamic>>();
       _materials = list
           .map((m) => _MaterialSchedule.fromJson(m))
-          .where((m) => m.nextReviewDate != null)
           .toList();
       if (!mounted) return;
       setState(() { _loading = false; _loadScheduleForSelectedDay(); });
@@ -149,7 +148,7 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('Month view', style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black45)),
+          Text('Month view', style: GoogleFonts.openSans(fontSize: 11, color: Colors.black45)),
           const SizedBox(width: 10),
           _Segmented(
             left: 'Month',
@@ -183,7 +182,7 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
                 ),
                 child: Text(
                   DateFormat('MMMM yyyy').format(_focusedDay),
-                  style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 12),
+                  style: GoogleFonts.openSans(fontWeight: FontWeight.w600, fontSize: 12),
                 ),
               ),
               const SizedBox(width: 10),
@@ -224,11 +223,11 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
             onPageChanged: (focused) {
               setState(() => _focusedDay = focused);
             },
-            daysOfWeekHeight: 20,
-            rowHeight: 35,
+            daysOfWeekHeight: 32,
+            rowHeight: 48,
             daysOfWeekStyle: DaysOfWeekStyle(
-              weekdayStyle: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600),
-              weekendStyle: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54, fontWeight: FontWeight.w600),
+              weekdayStyle: GoogleFonts.openSans(fontSize: 14, color: AppColors.textDark, fontWeight: FontWeight.w700),
+              weekendStyle: GoogleFonts.openSans(fontSize: 14, color: AppColors.textDark, fontWeight: FontWeight.w700),
             ),
             calendarStyle: const CalendarStyle(
               outsideDaysVisible: false,
@@ -270,12 +269,13 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
                   });
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: AppColors.accent,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                  elevation: 2,
                 ),
-                child: Text('Back to Today', style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700)),
+                child: Text('Back to Today', style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -323,19 +323,19 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
         children: [
           Row(
             children: [
-              Expanded(child: _InfoPill(bg: const Color(0xFFCFFFD1), title: 'Sessions', value: '$sessions Sessions')),
+              Expanded(child: _InfoPill(bg: const Color(0xFFEFF6FF), title: 'Sessions', value: '$sessions Sessions')),
               const SizedBox(width: 10),
-              Expanded(child: _InfoPill(bg: const Color(0xFFDFF5FF), title: 'Planned time', value: _fmtDuration(planned))),
+              Expanded(child: _InfoPill(bg: const Color(0xFFF1F5F9), title: 'Planned time', value: _fmtDuration(planned))),
               const SizedBox(width: 10),
-              Expanded(child: _InfoPill(bg: const Color(0xFFFFD8D8), title: 'Main focus', value: mainFocus)),
+              Expanded(child: _InfoPill(bg: const Color(0xFFEFF6FF), title: 'Main focus', value: mainFocus)),
             ],
           ),
           const SizedBox(height: 10),
           Row(
             children: [
-              Text('Completion', style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54)),
+              Text('Completion', style: GoogleFonts.openSans(fontSize: 11, color: Colors.black54)),
               const Spacer(),
-              Text('${(completion * 100).round()}%', style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54)),
+              Text('${(completion * 100).round()}%', style: GoogleFonts.openSans(fontSize: 11, color: Colors.black54)),
             ],
           ),
           const SizedBox(height: 6),
@@ -367,7 +367,7 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
       subtitle: 'Filter topics by priority',
       trailing: Text(
         'Showing ${filtered.length}/${all.length} topics • ${_fmtMinutes(filteredSum)} / ${_fmtDuration(allSum)} • ${_filterLabel(_filter)}',
-        style: GoogleFonts.dmSans(fontSize: 10.5, color: Colors.black45),
+        style: GoogleFonts.openSans(fontSize: 10.5, color: Colors.black45),
       ),
       child: Column(
         children: [
@@ -406,12 +406,12 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
             ),
             child: Row(
               children: [
-                Text('Tip:', style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 11)),
+                Text('Tip:', style: GoogleFonts.openSans(fontWeight: FontWeight.w600, fontSize: 11)),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Set your hardest module for your best focus time. Consistency beats intensity.',
-                    style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54),
+                    style: GoogleFonts.openSans(fontSize: 11, color: Colors.black54),
                   ),
                 )
               ],
@@ -420,7 +420,7 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
           const SizedBox(height: 8),
           Text(
             'Choose the start time for each subject. End time is calculated automatically. Use the bell to set a reminder',
-            style: GoogleFonts.dmSans(fontSize: 10.5, color: Colors.black45),
+            style: GoogleFonts.openSans(fontSize: 10.5, color: Colors.black45),
           ),
           const SizedBox(height: 12),
           for (int i = 0; i < _scheduleRows.length; i++)
@@ -440,7 +440,7 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                   side: const BorderSide(color: Color(0xFFE6E9F2)),
                 ),
-                child: Text('Auto Arrange', style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 12)),
+                child: Text('Auto Arrange', style: GoogleFonts.openSans(fontWeight: FontWeight.w600, fontSize: 12)),
               ),
               const SizedBox(width: 10),
               ElevatedButton(
@@ -458,7 +458,7 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
                   padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                 ),
-                child: Text('Save Time Plan', style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 12)),
+                child: Text('Save Time Plan', style: GoogleFonts.openSans(fontWeight: FontWeight.w600, fontSize: 12)),
               ),
             ],
           ),
@@ -467,7 +467,7 @@ class _ReviewSchedulePageState extends State<ReviewSchedulePage> {
             alignment: Alignment.centerRight,
             child: Text(
               '• Auto Arrange gives  non overlap time  • After all save time plan',
-              style: GoogleFonts.dmSans(fontSize: 10, color: Colors.black45),
+              style: GoogleFonts.openSans(fontSize: 10, color: Colors.black45),
             ),
           ),
         ],
@@ -551,11 +551,18 @@ class _PageHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Review Schedule', style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w700)),
-        const SizedBox(height: 2),
         Text(
-          'View your review schedule with subjects, dates, and time blocks',
-          style: GoogleFonts.dmSans(color: Colors.black54, fontSize: 12),
+          'Review Schedule',
+          style: GoogleFonts.openSans(
+            fontSize: 26,
+            fontWeight: FontWeight.w700,
+            color: AppColors.textDark,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          'View your personalized forgetting-curve review schedule, topics, and time blocks.',
+          style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 15, height: 1.4),
         ),
       ],
     );
@@ -581,10 +588,34 @@ class _StatsRow extends StatelessWidget {
       builder: (context, c) {
         final isNarrow = c.maxWidth < 900;
         final children = [
-          _StatCard(icon: Icons.assignment_late_outlined, title: '$urgentModules', subtitle: 'Urgent modules'),
-          _StatCard(icon: Icons.calendar_today_outlined, title: '$thisWeekCount', subtitle: 'This week'),
-          _StatCard(icon: Icons.timer_outlined, title: '${plannedTime.inMinutes}m', subtitle: 'Planned time'),
-          _StatCard(icon: Icons.folder_outlined, title: '$materialsTracked', subtitle: 'Materials tracked'),
+          _StatCard(
+            icon: Icons.assignment_late_outlined,
+            title: '$urgentModules',
+            subtitle: 'Urgent modules',
+            iconColor: const Color(0xFFEF4444),
+            iconBg: const Color(0xFFFEF2F2),
+          ),
+          _StatCard(
+            icon: Icons.calendar_today_outlined,
+            title: '$thisWeekCount',
+            subtitle: 'This week',
+            iconColor: AppColors.accent,
+            iconBg: const Color(0xFFEFF6FF),
+          ),
+          _StatCard(
+            icon: Icons.timer_outlined,
+            title: '${plannedTime.inMinutes}m',
+            subtitle: 'Planned time',
+            iconColor: const Color(0xFFD97706),
+            iconBg: AppColors.goldLight,
+          ),
+          _StatCard(
+            icon: Icons.folder_outlined,
+            title: '$materialsTracked',
+            subtitle: 'Materials tracked',
+            iconColor: const Color(0xFF10B981),
+            iconBg: const Color(0xFFECFDF5),
+          ),
         ];
 
         if (!isNarrow) {
@@ -594,7 +625,7 @@ class _StatsRow extends StatelessWidget {
                 .entries
                 .map((e) => Expanded(
                       child: Padding(
-                        padding: EdgeInsets.only(right: e.key == children.length - 1 ? 0 : 10),
+                        padding: EdgeInsets.only(right: e.key == children.length - 1 ? 0 : 14),
                         child: e.value,
                       ),
                     ))
@@ -603,9 +634,9 @@ class _StatsRow extends StatelessWidget {
         }
 
         return Wrap(
-          spacing: 10,
-          runSpacing: 10,
-          children: children.map((w) => SizedBox(width: (c.maxWidth - 10) / 2, child: w)).toList(),
+          spacing: 14,
+          runSpacing: 14,
+          children: children.map((w) => SizedBox(width: (c.maxWidth - 14) / 2, child: w)).toList(),
         );
       },
     );
@@ -616,37 +647,54 @@ class _StatCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final Color? iconColor;
+  final Color? iconBg;
 
-  const _StatCard({required this.icon, required this.title, required this.subtitle});
+  const _StatCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    this.iconColor,
+    this.iconBg,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 72,
-      padding: const EdgeInsets.all(12),
+      height: 84,
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFE8EAF0)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Row(
         children: [
           Container(
-            width: 36,
-            height: 36,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5FF),
+              color: iconBg ?? AppColors.accent.withValues(alpha: 0.08),
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: (iconColor ?? AppColors.accent).withValues(alpha: 0.3)),
             ),
-            child: Icon(icon, color: const Color(0xFF1D4ED8)),
+            child: Icon(icon, color: iconColor ?? AppColors.accent, size: 24),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 14),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(title, style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 16)),
-              Text(subtitle, style: GoogleFonts.dmSans(color: Colors.black54, fontSize: 11)),
+              Text(title, style: GoogleFonts.openSans(fontWeight: FontWeight.w700, fontSize: 22, color: AppColors.textDark)),
+              const SizedBox(height: 2),
+              Text(subtitle, style: GoogleFonts.openSans(color: AppColors.textMuted, fontSize: 14, fontWeight: FontWeight.w500)),
             ],
           ),
         ],
@@ -663,19 +711,26 @@ class _CardShell extends StatelessWidget {
 
   const _CardShell({
     required this.title,
-    required this.child,
     this.subtitle,
+    required this.child,
     this.trailing,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.all(22),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE8EAF0)),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -685,11 +740,11 @@ class _CardShell extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(title, style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 13)),
+                  Text(title, style: GoogleFonts.openSans(fontWeight: FontWeight.w700, fontSize: 18, color: AppColors.textDark)),
                   if (subtitle != null)
                     Padding(
-                      padding: const EdgeInsets.only(top: 2),
-                      child: Text(subtitle!, style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black45)),
+                      padding: const EdgeInsets.only(top: 3),
+                      child: Text(subtitle!, style: GoogleFonts.openSans(fontSize: 14, color: AppColors.textMuted)),
                     ),
                 ],
               ),
@@ -697,7 +752,7 @@ class _CardShell extends StatelessWidget {
               if (trailing != null) trailing!,
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 18),
           child,
         ],
       ),
@@ -738,15 +793,15 @@ class _Segmented extends StatelessWidget {
               child: Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: isLeftSelected ? AppColors.primary : Colors.transparent,
+                  color: isLeftSelected ? AppColors.accent : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   left,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: isLeftSelected ? Colors.white : Colors.black54,
+                  style: GoogleFonts.openSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isLeftSelected ? Colors.white : AppColors.textMuted,
                   ),
                 ),
               ),
@@ -759,15 +814,15 @@ class _Segmented extends StatelessWidget {
               child: Container(
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: !isLeftSelected ? AppColors.primary : Colors.transparent,
+                  color: !isLeftSelected ? AppColors.accent : Colors.transparent,
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Text(
                   right,
-                  style: GoogleFonts.dmSans(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: !isLeftSelected ? Colors.white : Colors.black54,
+                  style: GoogleFonts.openSans(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: !isLeftSelected ? Colors.white : AppColors.textMuted,
                   ),
                 ),
               ),
@@ -817,38 +872,56 @@ class _DayCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Selected in Figma looks dark-blue filled; unselected is white with border.
-    final bg = isSelected ? AppColors.primary : Colors.white;
-    final border = const Color(0xFFE6E9F2);
-    final textColor = isSelected ? Colors.white : Colors.black87;
+    final bg = isSelected ? AppColors.accent : Colors.white;
+    final border = isSelected ? AppColors.goldBorder : const Color(0xFFE2E8F0);
+    final textColor = isSelected ? Colors.white : AppColors.textDark;
 
     return Container(
       margin: const EdgeInsets.all(2),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: border),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: border, width: isSelected ? 2 : 1),
+        boxShadow: isSelected
+            ? [
+                BoxShadow(
+                  color: AppColors.accent.withValues(alpha: 0.35),
+                  blurRadius: 8,
+                  offset: const Offset(0, 3),
+                ),
+              ]
+            : null,
       ),
       child: Stack(
         children: [
           Center(
             child: Text(
               '${day.day}',
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 11, color: textColor),
+              style: GoogleFonts.openSans(
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                fontSize: 15,
+                color: textColor,
+              ),
             ),
           ),
           if (hasMarker)
             Positioned(
-              bottom: 3,
+              bottom: 4,
               left: 0,
               right: 0,
               child: Center(
                 child: Container(
-                  width: 5,
-                  height: 5,
+                  width: 7,
+                  height: 7,
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.amberAccent : AppColors.accent,
+                    color: isSelected ? AppColors.goldAccent : const Color(0xFF2563EB),
                     shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isSelected ? AppColors.goldAccent : const Color(0xFF2563EB)).withValues(alpha: 0.6),
+                        blurRadius: 4,
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -868,12 +941,12 @@ class _LegendDot extends StatelessWidget {
     return Row(
       children: [
         Container(
-          width: 6,
-          height: 6,
-          decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(8)),
+          width: 8,
+          height: 8,
+          decoration: const BoxDecoration(color: AppColors.accent, shape: BoxShape.circle),
         ),
         const SizedBox(width: 8),
-        Text(label, style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black45)),
+        Text(label, style: GoogleFonts.openSans(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -894,15 +967,15 @@ class _InfoPill extends StatelessWidget {
       decoration: BoxDecoration(
         color: bg,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12.withValues(alpha: 0.05)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(title, style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54)),
+          Text(title, style: GoogleFonts.openSans(fontSize: 11, color: AppColors.textMuted, fontWeight: FontWeight.w600)),
           const SizedBox(height: 2),
-          Text(value, maxLines: 1, overflow: TextOverflow.ellipsis, style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w800)),
+          Text(value, style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textDark)),
         ],
       ),
     );
@@ -918,19 +991,40 @@ class _FilterChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final chipColor = label.contains('Urgent')
+        ? const Color(0xFFEF4444)
+        : label.contains('soon')
+            ? const Color(0xFFF59E0B)
+            : label.contains('Safe')
+                ? const Color(0xFF10B981)
+                : AppColors.accent;
+
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(18),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : Colors.white,
+          color: selected ? chipColor : Colors.white,
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: selected ? AppColors.primary : const Color(0xFFE6E9F2)),
+          border: Border.all(color: selected ? chipColor : AppColors.border),
+          boxShadow: selected
+              ? [
+                  BoxShadow(
+                    color: chipColor.withValues(alpha: 0.3),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
-          style: GoogleFonts.dmSans(fontSize: 11, fontWeight: FontWeight.w700, color: selected ? Colors.white : Colors.black87),
+          style: GoogleFonts.openSans(
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: selected ? Colors.white : AppColors.textDark,
+          ),
         ),
       ),
     );
@@ -944,18 +1038,18 @@ class _TopicRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 44,
+      height: 50,
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FC),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE6E9F2)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
-          Expanded(child: Text(topic.name, style: GoogleFonts.dmSans(fontWeight: FontWeight.w700, fontSize: 12.5))),
-          Text('${topic.duration.inMinutes}m', style: GoogleFonts.dmSans(color: Colors.black54, fontWeight: FontWeight.w600, fontSize: 11)),
+          Expanded(child: Text(topic.name, style: GoogleFonts.openSans(fontWeight: FontWeight.w600, fontSize: 15, color: AppColors.textDark))),
+          Text('${topic.duration.inMinutes}m', style: GoogleFonts.openSans(color: AppColors.textMuted, fontWeight: FontWeight.w600, fontSize: 14)),
         ],
       ),
     );
@@ -981,25 +1075,25 @@ class _ScheduleRowWidget extends StatelessWidget {
     final endLabel = 'Ends ${_fmtTime(end)}';
 
     return Container(
-      height: 48,
+      height: 52,
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
-        color: const Color(0xFFF7F8FC),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE6E9F2)),
+        border: Border.all(color: AppColors.border),
       ),
       child: Row(
         children: [
           Expanded(
             flex: 3,
-            child: Text(row.subject, style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 12.5)),
+            child: Text(row.subject, style: GoogleFonts.openSans(fontWeight: FontWeight.w700, fontSize: 15, color: AppColors.textDark)),
           ),
           Expanded(
             flex: 3,
             child: Row(
               children: [
-                Text('Start time', style: GoogleFonts.dmSans(fontSize: 10.5, color: Colors.black45)),
+                Text('Start time', style: GoogleFonts.openSans(fontSize: 13, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
                 const SizedBox(width: 10),
                 _TimeDropdownButton(
                   value: row.startTime,
@@ -1012,7 +1106,7 @@ class _ScheduleRowWidget extends StatelessWidget {
           ),
           Expanded(
             flex: 2,
-            child: Text(endLabel, style: GoogleFonts.dmSans(fontSize: 11, color: Colors.black54)),
+            child: Text(endLabel, style: GoogleFonts.openSans(fontSize: 11, color: Colors.black54)),
           ),
           _ReminderMenuButton(
             value: row.reminder,
@@ -1068,7 +1162,7 @@ class _TimeDropdownButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: const Color(0xFFE6E9F2)),
         ),
-        child: Text(label, style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 11)),
+        child: Text(label, style: GoogleFonts.openSans(fontWeight: FontWeight.w600, fontSize: 11)),
       ),
     );
   }
@@ -1122,8 +1216,8 @@ class _ReminderMenuRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: Text(title, style: GoogleFonts.dmSans(fontWeight: FontWeight.w700))),
-        Text(subtitle, style: GoogleFonts.dmSans(color: Colors.black54, fontSize: 12)),
+        Expanded(child: Text(title, style: GoogleFonts.openSans(fontWeight: FontWeight.w700))),
+        Text(subtitle, style: GoogleFonts.openSans(color: Colors.black54, fontSize: 12)),
       ],
     );
   }
@@ -1152,10 +1246,12 @@ class _MaterialSchedule {
   factory _MaterialSchedule.fromJson(Map<String, dynamic> j) {
     final latest = j['latest_session'] as Map<String, dynamic>?;
     DateTime? nextReview;
-    final raw = latest?['next_review_date'] as String?;
+    final raw = latest?['next_review_date'] as String? ?? j['created_at'] as String? ?? j['uploaded_at'] as String?;
     if (raw != null) {
       try { nextReview = DateTime.parse(raw); } catch (_) {}
     }
+    nextReview ??= DateTime.now();
+
     return _MaterialSchedule(
       materialId: j['material_id'] as String? ?? '',
       filename: (j['filename'] as String? ?? 'Untitled.pdf').replaceAll('.pdf', ''),
@@ -1195,9 +1291,9 @@ class _LoadErrorCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Couldn\'t load your schedule',
-              style: GoogleFonts.dmSans(fontWeight: FontWeight.w800, fontSize: 14)),
+              style: GoogleFonts.openSans(fontWeight: FontWeight.w600, fontSize: 14)),
           const SizedBox(height: 6),
-          Text(message, style: GoogleFonts.dmSans(color: Colors.black54, fontSize: 12)),
+          Text(message, style: GoogleFonts.openSans(color: Colors.black54, fontSize: 12)),
           const SizedBox(height: 12),
           OutlinedButton(onPressed: onRetry, child: const Text('Retry')),
         ],

@@ -92,12 +92,12 @@ class _TeacherMessageDialogState extends State<TeacherMessageDialog> {
               children: [
                 Text(
                   'Message',
-                  style: GoogleFonts.dmSans(fontSize: 18, fontWeight: FontWeight.w800),
+                  style: GoogleFonts.openSans(fontSize: 18, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   widget.studentName,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
                     color: Colors.black54,
@@ -112,7 +112,7 @@ class _TeacherMessageDialogState extends State<TeacherMessageDialog> {
 
                 Text(
                   'Quick templates',
-                  style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w800),
+                  style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
                 Wrap(
@@ -140,7 +140,7 @@ class _TeacherMessageDialogState extends State<TeacherMessageDialog> {
 
                 Text(
                   'Message',
-                  style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w800),
+                  style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 12),
                 _BigMessageBox(
@@ -157,7 +157,7 @@ class _TeacherMessageDialogState extends State<TeacherMessageDialog> {
                   const SizedBox(height: 14),
                   Text(
                     _error!,
-                    style: GoogleFonts.dmSans(color: AppColors.error, fontSize: 12.5, fontWeight: FontWeight.w600),
+                    style: GoogleFonts.openSans(color: AppColors.error, fontSize: 12.5, fontWeight: FontWeight.w600),
                   ),
                 ],
                 const SizedBox(height: 22),
@@ -200,7 +200,7 @@ class _FieldLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       text,
-      style: GoogleFonts.dmSans(fontSize: 13, fontWeight: FontWeight.w800),
+      style: GoogleFonts.openSans(fontSize: 13, fontWeight: FontWeight.w600),
     );
   }
 }
@@ -219,10 +219,10 @@ class _InputPill extends StatelessWidget {
       height: 52,
       child: TextField(
         controller: controller,
-        style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700),
+        style: GoogleFonts.openSans(fontSize: 12, fontWeight: FontWeight.w700),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.dmSans(color: Colors.black45, fontSize: 11),
+          hintStyle: GoogleFonts.openSans(color: Colors.black45, fontSize: 11),
           filled: true,
           fillColor: Colors.white,
           contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
@@ -263,9 +263,9 @@ class _TemplateButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             fontSize: 11,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: Colors.white,
           ),
         ),
@@ -295,10 +295,10 @@ class _BigMessageBox extends StatelessWidget {
       child: TextField(
         controller: controller,
         maxLines: null,
-        style: GoogleFonts.dmSans(fontSize: 12, fontWeight: FontWeight.w700),
+        style: GoogleFonts.openSans(fontSize: 12, fontWeight: FontWeight.w700),
         decoration: InputDecoration(
           hintText: hint,
-          hintStyle: GoogleFonts.dmSans(color: Colors.black45, fontSize: 11),
+          hintStyle: GoogleFonts.openSans(color: Colors.black45, fontSize: 11),
           border: InputBorder.none,
         ),
       ),
@@ -334,9 +334,9 @@ class _ActionButton extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.dmSans(
+          style: GoogleFonts.openSans(
             fontSize: 12,
-            fontWeight: FontWeight.w800,
+            fontWeight: FontWeight.w600,
             color: primary ? Colors.white : Colors.black87,
           ),
         ),

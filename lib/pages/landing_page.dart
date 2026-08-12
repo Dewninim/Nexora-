@@ -92,7 +92,7 @@ class _LandingPageState extends State<LandingPage> {
                         const SizedBox(height: 4),
                         Text(
                           'NEUROMATHIX',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                             color: Colors.white,
                             fontSize: 9,
                             fontWeight: FontWeight.w700,
@@ -121,7 +121,7 @@ class _LandingPageState extends State<LandingPage> {
                           ),
                           child: Text(
                             'Sign in',
-                            style: GoogleFonts.dmSans(
+                            style: GoogleFonts.openSans(
                               color: Colors.white,
                               fontWeight: FontWeight.w600,
                               fontSize: 15,
@@ -154,7 +154,7 @@ class _LandingPageState extends State<LandingPage> {
                         ),
                         child: Text(
                           'AI-Powered Personalized Learning',
-                          style: GoogleFonts.dmSans(
+                          style: GoogleFonts.openSans(
                             color: Colors.white.withValues(alpha: 0.90),
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -165,10 +165,10 @@ class _LandingPageState extends State<LandingPage> {
                       Text(
                         'Smarter learning',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                           color: Colors.white,
                           fontSize: 72,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                           height: 1.05,
                           letterSpacing: -1,
                         ),
@@ -176,10 +176,10 @@ class _LandingPageState extends State<LandingPage> {
                       Text(
                         'Lasting memory',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                           color: Colors.white.withValues(alpha: 0.42),
                           fontSize: 72,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w600,
                           height: 1.05,
                           letterSpacing: -1,
                         ),
@@ -188,7 +188,7 @@ class _LandingPageState extends State<LandingPage> {
                       Text(
                         'Master mathematics with AI that adapts to your unique learning style,\npredicts what you\'ll forget, and helps you truly understand.',
                         textAlign: TextAlign.center,
-                        style: GoogleFonts.dmSans(
+                        style: GoogleFonts.openSans(
                           color: Colors.white.withValues(alpha: 0.80),
                           fontSize: 16,
                           height: 1.6,
@@ -220,11 +220,11 @@ class _LandingPageState extends State<LandingPage> {
                                 ),
                                 child: Text(
                                   'Get Started →',
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.openSans(
                                     color: _getStartedHovered
                                         ? Colors.white
                                         : AppColors.accent,
-                                    fontWeight: FontWeight.w800,
+                                    fontWeight: FontWeight.w600,
                                     fontSize: 16,
                                   ),
                                 ),
@@ -258,7 +258,7 @@ class _LandingPageState extends State<LandingPage> {
                                 ),
                                 child: Text(
                                   'I have an account',
-                                  style: GoogleFonts.dmSans(
+                                  style: GoogleFonts.openSans(
                                     color: Colors.white,
                                     fontWeight: FontWeight.w600,
                                     fontSize: 16,
@@ -279,7 +279,7 @@ class _LandingPageState extends State<LandingPage> {
                 child: Text(
                   '© 2026 NeuroMathix. All rights reserved.',
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.dmSans(
+                  style: GoogleFonts.openSans(
                     color: Colors.white.withValues(alpha: 0.50),
                     fontSize: 13,
                   ),
